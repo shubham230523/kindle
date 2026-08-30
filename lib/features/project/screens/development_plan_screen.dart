@@ -3,6 +3,7 @@ import '../models/project.dart';
 import '../models/development_plan.dart';
 import '../models/phase.dart';
 import '../models/task.dart';
+import 'task_detail_screen.dart';
 import '../../../shared/widgets/kindle_card.dart';
 import '../../../shared/widgets/section_title.dart';
 import '../../../core/theme/app_colors.dart';
@@ -33,22 +34,55 @@ class _DevelopmentPlanScreenState extends State<DevelopmentPlanScreen> {
       projectId: widget.project.id,
       createdAt: DateTime.now(),
       phases: [
-        const Phase(
+        Phase(
           id: 'p1',
           title: 'Project Setup',
           description: 'Initialize repository and configure environment.',
           tasks: [
-            Task(id: 't1_1', title: 'Initialize Git Repository', description: 'Setup version control.', phaseId: 'p1', status: TaskStatus.done),
-            Task(id: 't1_2', title: 'Setup CI/CD Pipeline', description: 'Configure automated builds.', phaseId: 'p1', complexity: TaskComplexity.high),
+            const Task(
+              id: 't1_1',
+              title: 'Initialize Git Repository',
+              description: 'Setup version control and base branching strategy.',
+              expectedOutput: 'A clean repository with initial commits.',
+              filesToChange: ['.gitignore', 'README.md'],
+              acceptanceCriteria: ['Repo initialized', 'Remote origin set'],
+              phaseId: 'p1',
+              status: TaskStatus.done,
+            ),
+            const Task(
+              id: 't1_2',
+              title: 'Setup CI/CD Pipeline',
+              description: 'Configure automated builds and deployment scripts.',
+              expectedOutput: 'Working GitHub Action or GitLab CI file.',
+              filesToChange: ['.github/workflows/main.yml'],
+              acceptanceCriteria: ['Build passes on push', 'Tests run automatically'],
+              phaseId: 'p1',
+              complexity: TaskComplexity.high,
+            ),
           ],
         ),
-        const Phase(
+        Phase(
           id: 'p2',
           title: 'Foundation',
           description: 'Core architecture and shared components.',
           tasks: [
-            Task(id: 't2_1', title: 'Implement Theme System', description: 'Centralize colors and spacing.', phaseId: 'p2', status: TaskStatus.done),
-            Task(id: 't2_2', title: 'Setup Dependency Injection', description: 'Configure GetIt or Hilt.', phaseId: 'p2'),
+            const Task(
+              id: 't2_1',
+              title: 'Implement Theme System',
+              description: 'Centralize colors, spacing, and typography.',
+              expectedOutput: 'AppTheme class and reusable style tokens.',
+              filesToChange: ['lib/core/theme/app_theme.dart', 'lib/core/theme/app_colors.dart'],
+              acceptanceCriteria: ['Dark mode support', 'Responsive spacing tokens'],
+              phaseId: 'p2',
+              status: TaskStatus.done,
+            ),
+            const Task(
+              id: 't2_2',
+              title: 'Setup Dependency Injection',
+              description: 'Configure service locator for decoupled services.',
+              expectedOutput: 'Injection container initialized in main.',
+              phaseId: 'p2',
+            ),
           ],
         ),
         const Phase(
@@ -68,6 +102,8 @@ class _DevelopmentPlanScreenState extends State<DevelopmentPlanScreen> {
             id: 't4_${f.id}',
             title: 'Implement ${f.name}',
             description: f.description,
+            expectedOutput: 'Fully functional ${f.name} module.',
+            acceptanceCriteria: ['Unit tests pass', 'UI matches design'],
             phaseId: 'p4',
             complexity: TaskComplexity.high,
           )).toList(),
@@ -194,6 +230,14 @@ class _TaskTile extends StatelessWidget {
 
     return ListTile(
       dense: true,
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => TaskDetailScreen(task: task),
+          ),
+        );
+      },
       leading: Icon(
         isDone ? Icons.check_circle : Icons.radio_button_unchecked,
         color: isDone ? Colors.green : Colors.grey,
