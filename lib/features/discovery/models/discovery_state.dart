@@ -1,9 +1,11 @@
 import '../../../shared/models/message.dart';
 
 enum DiscoveryStage {
-  initialIdea,
-  reversePrompting,
-  discoveryComplete,
+  understandingIdea,
+  gatheringRequirements,
+  definingFeatures,
+  selectingTech,
+  planning,
 }
 
 class DiscoveryState {
@@ -19,7 +21,7 @@ class DiscoveryState {
     this.messages = const [],
     this.isAiTyping = false,
     this.errorMessage,
-    this.stage = DiscoveryStage.initialIdea,
+    this.stage = DiscoveryStage.understandingIdea,
     this.answers = const {},
     this.currentQuestionIndex = -1,
     this.progress = 0.0,

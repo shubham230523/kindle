@@ -27,9 +27,9 @@ class DiscoveryViewModel extends ChangeNotifier {
       status: MessageStatus.sent,
     );
 
-    // Store answer if we are in reverse prompting stage
+    // Store answer if we are currently asking questions
     Map<String, String> updatedAnswers = Map.from(_state.answers);
-    if (_state.stage == DiscoveryStage.reversePrompting && _state.currentQuestionIndex >= 0) {
+    if (_state.currentQuestionIndex >= 0 && _state.currentQuestionIndex < _questions.length) {
       updatedAnswers[_questions[_state.currentQuestionIndex]] = text;
     }
 
@@ -45,28 +45,32 @@ class DiscoveryViewModel extends ChangeNotifier {
   }
 
   void _processConversation() {
-    final currentStage = _state.stage;
-    DiscoveryStage nextStage = currentStage;
+    DiscoveryStage nextStage = _state.stage;
     String responseContent = "";
     int nextQuestionIndex = _state.currentQuestionIndex;
 
-    if (currentStage == DiscoveryStage.initialIdea) {
-      nextStage = DiscoveryStage.reversePrompting;
+    if (_state.currentQuestionIndex == -1) {
+      // First user message (Initial Idea)
       nextQuestionIndex = 0;
+      nextStage = DiscoveryStage.gatheringRequirements;
       responseContent = "That's an interesting idea! To help me understand better, I'd like to ask a few questions. First, ${_questions[0]}";
-    } else if (currentStage == DiscoveryStage.reversePrompting) {
+    } else {
       nextQuestionIndex++;
       if (nextQuestionIndex < _questions.length) {
+        // Update stage based on question index
+        if (nextQuestionIndex == 2) {
+          nextStage = DiscoveryStage.definingFeatures;
+        } else if (nextQuestionIndex == 3) {
+          nextStage = DiscoveryStage.selectingTech;
+        }
         responseContent = "Got it. Next: ${_questions[nextQuestionIndex]}";
       } else {
-        nextStage = DiscoveryStage.discoveryComplete;
+        nextStage = DiscoveryStage.planning;
         responseContent = "Thank you! I've gathered all the information I need. I'm now processing your requirements to generate a project roadmap.";
       }
-    } else {
-      responseContent = "The discovery is complete! You can now view your project details.";
     }
 
-    final double progress = nextStage == DiscoveryStage.discoveryComplete 
+    final double progress = nextStage == DiscoveryStage.planning 
         ? 1.0 
         : (nextQuestionIndex + 1) / (_questions.length + 1);
 

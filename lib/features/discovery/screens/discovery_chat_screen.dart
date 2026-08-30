@@ -6,6 +6,7 @@ import '../../../core/utils/responsive_layout.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../viewmodels/discovery_viewmodel.dart';
+import 'widgets/stage_indicator.dart';
 
 class DiscoveryChatScreen extends StatefulWidget {
   const DiscoveryChatScreen({super.key});
@@ -83,13 +84,7 @@ class _DiscoveryChatScreenState extends State<DiscoveryChatScreen> {
               constraints: const BoxConstraints(maxWidth: kMaxContentWidth),
               child: Column(
                 children: [
-                  if (state.progress > 0 && state.progress < 1.0)
-                    LinearProgressIndicator(
-                      value: state.progress,
-                      backgroundColor: Colors.grey.shade200,
-                      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
-                      minHeight: 2,
-                    ),
+                  DiscoveryStageIndicator(currentStage: state.stage),
                   Expanded(
                     child: ListView.builder(
                       controller: _scrollController,
