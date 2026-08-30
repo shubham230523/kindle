@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/project.dart';
 import 'project_edit_screen.dart';
+import 'platform_selection_screen.dart';
 import '../../../shared/widgets/kindle_card.dart';
 import '../../../shared/widgets/section_title.dart';
 import '../../../shared/widgets/kindle_button.dart';
@@ -44,6 +45,21 @@ class _ProjectSummaryScreenState extends State<ProjectSummaryScreen> {
     }
   }
 
+  void _handlePlatformSelection() async {
+    final updatedProject = await Navigator.push<Project>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => PlatformSelectionScreen(project: _project),
+      ),
+    );
+
+    if (updatedProject != null) {
+      setState(() {
+        _project = updatedProject;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -70,12 +86,14 @@ class _ProjectSummaryScreenState extends State<ProjectSummaryScreen> {
                   const SizedBox(height: AppConstants.spacingLg),
                   _OverviewSection(project: _project),
                   const SizedBox(height: AppConstants.spacingLg),
+                  if (_project.platforms.isNotEmpty) ...[
+                    _PlatformsSection(project: _project),
+                    const SizedBox(height: AppConstants.spacingLg),
+                  ],
                   _FeaturesSection(project: _project),
                   const SizedBox(height: AppConstants.spacingLg),
                   _ActionSection(
-                    onContinue: () {
-                      // Navigate to tech selection or workspace
-                    },
+                    onContinue: _handlePlatformSelection,
                     onEdit: _handleEdit,
                   ),
                   const SizedBox(height: AppConstants.spacingXl),
@@ -219,6 +237,36 @@ class _OverviewSection extends StatelessWidget {
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                 height: 1.5,
               ),
+        ),
+      ],
+    );
+  }
+}
+
+class _PlatformsSection extends StatelessWidget {
+  final Project project;
+
+  const _PlatformsSection({required this.project});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SectionTitle(title: 'Target Platforms'),
+        KindleCard(
+          child: Wrap(
+            spacing: AppConstants.spacingSm,
+            runSpacing: AppConstants.spacingSm,
+            children: project.platforms.map((platform) {
+              return Chip(
+                label: Text(platform[0].toUpperCase() + platform.substring(1)),
+                backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                side: BorderSide.none,
+                labelStyle: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
+              );
+            }).toList(),
+          ),
         ),
       ],
     );
