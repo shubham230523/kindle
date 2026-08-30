@@ -7,6 +7,7 @@ import 'agent_activity_screen.dart';
 import 'generated_code_screen.dart';
 import 'generated_changes_screen.dart';
 import 'build_dashboard_screen.dart';
+import 'testing_dashboard_screen.dart';
 import '../../project/screens/requirements_list_screen.dart';
 import '../../project/screens/architecture_overview_screen.dart';
 import '../../project/screens/development_plan_screen.dart';
@@ -63,6 +64,8 @@ class _ProjectWorkspaceShellState extends State<ProjectWorkspaceShell> {
         return const GeneratedCodeScreen();
       case 7:
         return BuildDashboardScreen(project: _viewModel.project);
+      case 8:
+        return TestingDashboardScreen(project: _viewModel.project);
       default:
         return Center(
           child: Column(

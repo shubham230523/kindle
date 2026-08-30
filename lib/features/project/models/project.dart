@@ -6,6 +6,7 @@ import 'architecture.dart';
 import 'development_plan.dart';
 import 'file_change.dart';
 import 'build.dart';
+import 'test_run.dart';
 
 enum ProjectStatus { draft, inProgress, completed, archived }
 
@@ -29,6 +30,7 @@ class Project {
   final DevelopmentPlan? developmentPlan;
   final List<FileChange> fileChanges;
   final List<ProjectBuild> builds;
+  final List<TestRun> testRuns;
 
   const Project({
     required this.id,
@@ -50,6 +52,7 @@ class Project {
     this.developmentPlan,
     this.fileChanges = const [],
     this.builds = const [],
+    this.testRuns = const [],
   });
 
   Project copyWith({
@@ -72,6 +75,7 @@ class Project {
     DevelopmentPlan? developmentPlan,
     List<FileChange>? fileChanges,
     List<ProjectBuild>? builds,
+    List<TestRun>? testRuns,
   }) {
     return Project(
       id: id ?? this.id,
@@ -93,6 +97,7 @@ class Project {
       developmentPlan: developmentPlan ?? this.developmentPlan,
       fileChanges: fileChanges ?? this.fileChanges,
       builds: builds ?? this.builds,
+      testRuns: testRuns ?? this.testRuns,
     );
   }
 
@@ -117,6 +122,7 @@ class Project {
       'developmentPlan': developmentPlan?.toMap(),
       'fileChanges': fileChanges.map((x) => x.toMap()).toList(),
       'builds': builds.map((x) => x.toMap()).toList(),
+      'testRuns': testRuns.map((x) => x.toMap()).toList(),
     };
   }
 
@@ -155,6 +161,9 @@ class Project {
       ),
       builds: List<ProjectBuild>.from(
         (map['builds'] as List? ?? []).map((x) => ProjectBuild.fromMap(x)),
+      ),
+      testRuns: List<TestRun>.from(
+        (map['testRuns'] as List? ?? []).map((x) => TestRun.fromMap(x)),
       ),
     );
   }
