@@ -1,6 +1,7 @@
 import fastify from 'fastify';
 import cors from '@fastify/cors';
 import healthRoutes from './routes/v1/health.js';
+import aiRoutes from './routes/v1/ai.js';
 import errorHandler from './plugins/error-handler.js';
 
 export async function buildApp() {
@@ -22,6 +23,7 @@ export async function buildApp() {
 
   // Routes
   await app.register(healthRoutes, { prefix: '/api/v1' });
+  await app.register(aiRoutes, { prefix: '/api/v1' });
 
   return app;
 }
