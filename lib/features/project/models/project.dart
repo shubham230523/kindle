@@ -5,6 +5,7 @@ import 'screen_definition.dart';
 import 'architecture.dart';
 import 'development_plan.dart';
 import 'file_change.dart';
+import 'build.dart';
 
 enum ProjectStatus { draft, inProgress, completed, archived }
 
@@ -27,6 +28,7 @@ class Project {
   final Architecture? architecture;
   final DevelopmentPlan? developmentPlan;
   final List<FileChange> fileChanges;
+  final List<ProjectBuild> builds;
 
   const Project({
     required this.id,
@@ -47,6 +49,7 @@ class Project {
     this.architecture,
     this.developmentPlan,
     this.fileChanges = const [],
+    this.builds = const [],
   });
 
   Project copyWith({
@@ -68,6 +71,7 @@ class Project {
     Architecture? architecture,
     DevelopmentPlan? developmentPlan,
     List<FileChange>? fileChanges,
+    List<ProjectBuild>? builds,
   }) {
     return Project(
       id: id ?? this.id,
@@ -88,6 +92,7 @@ class Project {
       architecture: architecture ?? this.architecture,
       developmentPlan: developmentPlan ?? this.developmentPlan,
       fileChanges: fileChanges ?? this.fileChanges,
+      builds: builds ?? this.builds,
     );
   }
 
@@ -111,6 +116,7 @@ class Project {
       'architecture': architecture?.toMap(),
       'developmentPlan': developmentPlan?.toMap(),
       'fileChanges': fileChanges.map((x) => x.toMap()).toList(),
+      'builds': builds.map((x) => x.toMap()).toList(),
     };
   }
 
@@ -146,6 +152,9 @@ class Project {
       developmentPlan: map['developmentPlan'] != null ? DevelopmentPlan.fromMap(map['developmentPlan']) : null,
       fileChanges: List<FileChange>.from(
         (map['fileChanges'] as List? ?? []).map((x) => FileChange.fromMap(x)),
+      ),
+      builds: List<ProjectBuild>.from(
+        (map['builds'] as List? ?? []).map((x) => ProjectBuild.fromMap(x)),
       ),
     );
   }

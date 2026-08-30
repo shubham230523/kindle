@@ -6,6 +6,7 @@ import 'project_dashboard_screen.dart';
 import 'agent_activity_screen.dart';
 import 'generated_code_screen.dart';
 import 'generated_changes_screen.dart';
+import 'build_dashboard_screen.dart';
 import '../../project/screens/requirements_list_screen.dart';
 import '../../project/screens/architecture_overview_screen.dart';
 import '../../project/screens/development_plan_screen.dart';
@@ -39,6 +40,7 @@ class _ProjectWorkspaceShellState extends State<ProjectWorkspaceShell> {
     const _WorkspaceDestination('Development', Icons.code_outlined, Icons.code),
     const _WorkspaceDestination('Changes', Icons.history, Icons.history),
     const _WorkspaceDestination('Source', Icons.folder_outlined, Icons.folder),
+    const _WorkspaceDestination('Builds', Icons.build_circle_outlined, Icons.build_circle),
     const _WorkspaceDestination('Testing', Icons.bug_report_outlined, Icons.bug_report),
     const _WorkspaceDestination('Settings', Icons.settings_outlined, Icons.settings),
   ];
@@ -59,6 +61,8 @@ class _ProjectWorkspaceShellState extends State<ProjectWorkspaceShell> {
         return GeneratedChangesScreen(project: _viewModel.project);
       case 6:
         return const GeneratedCodeScreen();
+      case 7:
+        return BuildDashboardScreen(project: _viewModel.project);
       default:
         return Center(
           child: Column(
