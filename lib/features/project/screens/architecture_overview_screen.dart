@@ -3,9 +3,11 @@ import '../models/project.dart';
 import '../models/architecture.dart';
 import '../models/module.dart';
 import '../models/technology_dependency.dart';
+import 'development_plan_screen.dart';
 import 'widgets/architecture_diagram.dart';
 import '../../../shared/widgets/kindle_card.dart';
 import '../../../shared/widgets/section_title.dart';
+import '../../../shared/widgets/kindle_button.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/responsive_layout.dart';
@@ -141,6 +143,18 @@ class ArchitectureOverviewScreen extends StatelessWidget {
                       'Unidirectional data flow ensures state consistency. Events originate from the UI, processed by the business logic layer, and results are propagated back through reactive streams.',
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(height: 1.5),
                     ),
+                  ),
+                  const SizedBox(height: AppConstants.spacingLg),
+                  KindleButton(
+                    text: 'View Development Roadmap',
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => DevelopmentPlanScreen(project: project),
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: AppConstants.spacingXl),
                 ],
