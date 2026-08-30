@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../workspace/screens/chat_screen.dart';
 import '../../../core/utils/responsive_layout.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/constants/app_constants.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -31,7 +33,7 @@ class _SplashScreenState extends State<SplashScreen> {
     final bool isDesktop = ResponsiveLayout.isDesktop(context);
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: AppColors.splashBackground,
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -46,19 +48,19 @@ class _SplashScreenState extends State<SplashScreen> {
                     opacity: value,
                     child: Icon(
                       Icons.wb_sunny,
-                      color: Colors.amber,
+                      color: AppColors.accent,
                       size: isDesktop ? 120 : 80,
                     ),
                   ),
                 );
               },
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: AppConstants.spacingLg),
             Text(
               "A spark that starts something",
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: Colors.white,
+                color: AppColors.textSplash,
                 fontSize: isDesktop ? 24 : 18,
                 letterSpacing: 1.2,
                 fontStyle: FontStyle.italic,

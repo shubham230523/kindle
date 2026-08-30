@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import '../../../shared/models/message.dart';
 import '../../../shared/widgets/chat_bubble.dart';
 import '../../../core/utils/responsive_layout.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/constants/app_constants.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
@@ -65,8 +67,6 @@ class _ChatScreenState extends State<ChatScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Kindle Agent'),
-        centerTitle: true,
-        elevation: 1,
       ),
       body: Center(
         child: ConstrainedBox(
@@ -76,7 +76,10 @@ class _ChatScreenState extends State<ChatScreen> {
               Expanded(
                 child: ListView.builder(
                   controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppConstants.spacingMd,
+                    vertical: AppConstants.spacingSm,
+                  ),
                   itemCount: _messages.length,
                   itemBuilder: (context, index) {
                     return ChatBubble(message: _messages[index]);
@@ -89,33 +92,29 @@ class _ChatScreenState extends State<ChatScreen> {
                   boxShadow: [
                     if (ResponsiveLayout.isDesktop(context))
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
+                        color: AppColors.inputShadow,
                         blurRadius: 10,
                         offset: const Offset(0, -5),
                       ),
                   ],
                 ),
-                padding: const EdgeInsets.all(16.0),
+                padding: const EdgeInsets.all(AppConstants.spacingMd),
                 child: Row(
                   children: [
                     Expanded(
                       child: TextField(
                         controller: _controller,
-                        decoration: InputDecoration(
+                        decoration: const InputDecoration(
                           hintText: 'Type a message...',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16),
                         ),
                         onSubmitted: (_) => _sendMessage(),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: AppConstants.spacingSm),
                     CircleAvatar(
-                      backgroundColor: Colors.blueAccent,
+                      backgroundColor: Theme.of(context).colorScheme.primary,
                       child: IconButton(
-                        icon: const Icon(Icons.send, color: Colors.white),
+                        icon: const Icon(Icons.send, color: AppColors.textOnPrimary),
                         onPressed: _sendMessage,
                       ),
                     ),

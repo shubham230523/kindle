@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/message.dart';
+import '../../../core/theme/app_colors.dart';
+import '../../../core/constants/app_constants.dart';
 
 class ChatBubble extends StatelessWidget {
   final Message message;
@@ -15,21 +17,31 @@ class ChatBubble extends StatelessWidget {
           maxWidth: MediaQuery.sizeOf(context).width * 0.75,
         ),
         child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 14),
+          margin: const EdgeInsets.symmetric(
+            vertical: AppConstants.spacingXs,
+            horizontal: AppConstants.spacingSm,
+          ),
+          padding: const EdgeInsets.symmetric(
+            vertical: AppConstants.spacingSm + 2,
+            horizontal: AppConstants.spacingMd - 2,
+          ),
           decoration: BoxDecoration(
-            color: message.isUser ? Colors.blueAccent : Colors.grey[300],
+            color: message.isUser ? AppColors.userBubble : AppColors.agentBubble,
             borderRadius: BorderRadius.only(
-              topLeft: const Radius.circular(12),
-              topRight: const Radius.circular(12),
-              bottomLeft: message.isUser ? const Radius.circular(12) : const Radius.circular(0),
-              bottomRight: message.isUser ? const Radius.circular(0) : const Radius.circular(12),
+              topLeft: const Radius.circular(AppConstants.radiusMd),
+              topRight: const Radius.circular(AppConstants.radiusMd),
+              bottomLeft: message.isUser
+                  ? const Radius.circular(AppConstants.radiusMd)
+                  : const Radius.circular(0),
+              bottomRight: message.isUser
+                  ? const Radius.circular(0)
+                  : const Radius.circular(AppConstants.radiusMd),
             ),
           ),
           child: Text(
             message.text,
             style: TextStyle(
-              color: message.isUser ? Colors.white : Colors.black87,
+              color: message.isUser ? AppColors.textOnPrimary : AppColors.textPrimary,
               fontSize: 16,
             ),
           ),
