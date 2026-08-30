@@ -5,6 +5,7 @@ import '../models/discovery_state.dart';
 import '../../project/models/project.dart';
 import '../../project/models/requirement.dart';
 import '../../project/models/feature.dart';
+import '../../project/models/user_story.dart';
 
 class DiscoveryViewModel extends ChangeNotifier {
   DiscoveryState _state = const DiscoveryState();
@@ -109,15 +110,17 @@ class DiscoveryViewModel extends ChangeNotifier {
       requirements: [
         Requirement(
           id: "req1",
-          title: "User Experience",
-          description: "Optimized for $targetUser",
+          title: "Offline Support",
+          description: "Users should be able to access core data without internet.",
           priority: RequirementPriority.high,
+          type: RequirementType.nonFunctional,
         ),
         Requirement(
           id: "req2",
-          title: "Core Solution",
-          description: problem,
-          priority: RequirementPriority.high,
+          title: "Push Notifications",
+          description: "Notify users about critical updates.",
+          priority: RequirementPriority.medium,
+          type: RequirementType.functional,
         ),
       ],
       features: featuresText.split(',').map((f) => Feature(
@@ -126,6 +129,20 @@ class DiscoveryViewModel extends ChangeNotifier {
         description: "Core functionality for ${f.trim()}",
         category: "Core",
       )).toList(),
+      userStories: [
+        UserStory(
+          id: "us1",
+          actor: "New User",
+          action: "sign up with email",
+          benefit: "I can start using the application immediately.",
+        ),
+        UserStory(
+          id: "us2",
+          actor: "Frequent User",
+          action: "bookmark favorite items",
+          benefit: "I can quickly access them later.",
+        ),
+      ],
     );
 
     Timer(const Duration(seconds: 2), () {

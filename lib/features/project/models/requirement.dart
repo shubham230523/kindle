@@ -1,16 +1,20 @@
 enum RequirementPriority { low, medium, high }
 
+enum RequirementType { functional, nonFunctional }
+
 class Requirement {
   final String id;
   final String title;
   final String description;
   final RequirementPriority priority;
+  final RequirementType type;
 
   const Requirement({
     required this.id,
     required this.title,
     required this.description,
     required this.priority,
+    this.type = RequirementType.functional,
   });
 
   Requirement copyWith({
@@ -18,12 +22,14 @@ class Requirement {
     String? title,
     String? description,
     RequirementPriority? priority,
+    RequirementType? type,
   }) {
     return Requirement(
       id: id ?? this.id,
       title: title ?? this.title,
       description: description ?? this.description,
       priority: priority ?? this.priority,
+      type: type ?? this.type,
     );
   }
 
@@ -33,6 +39,7 @@ class Requirement {
       'title': title,
       'description': description,
       'priority': priority.name,
+      'type': type.name,
     };
   }
 
@@ -44,6 +51,10 @@ class Requirement {
       priority: RequirementPriority.values.firstWhere(
         (e) => e.name == map['priority'],
         orElse: () => RequirementPriority.medium,
+      ),
+      type: RequirementType.values.firstWhere(
+        (e) => e.name == map['type'],
+        orElse: () => RequirementType.functional,
       ),
     );
   }

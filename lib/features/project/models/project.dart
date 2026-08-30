@@ -1,5 +1,6 @@
 import 'requirement.dart';
 import 'feature.dart';
+import 'user_story.dart';
 import 'screen_definition.dart';
 import 'architecture.dart';
 import 'development_plan.dart';
@@ -16,6 +17,7 @@ class Project {
   final DateTime createdAt;
   final List<Requirement> requirements;
   final List<Feature> features;
+  final List<UserStory> userStories;
   final List<ScreenDefinition> screens;
   final List<String> platforms;
   final String? selectedTechnology;
@@ -34,6 +36,7 @@ class Project {
     required this.createdAt,
     this.requirements = const [],
     this.features = const [],
+    this.userStories = const [],
     this.screens = const [],
     this.platforms = const [],
     this.selectedTechnology,
@@ -53,6 +56,7 @@ class Project {
     DateTime? createdAt,
     List<Requirement>? requirements,
     List<Feature>? features,
+    List<UserStory>? userStories,
     List<ScreenDefinition>? screens,
     List<String>? platforms,
     String? selectedTechnology,
@@ -71,6 +75,7 @@ class Project {
       createdAt: createdAt ?? this.createdAt,
       requirements: requirements ?? this.requirements,
       features: features ?? this.features,
+      userStories: userStories ?? this.userStories,
       screens: screens ?? this.screens,
       platforms: platforms ?? this.platforms,
       selectedTechnology: selectedTechnology ?? this.selectedTechnology,
@@ -92,6 +97,7 @@ class Project {
       'createdAt': createdAt.toIso8601String(),
       'requirements': requirements.map((x) => x.toMap()).toList(),
       'features': features.map((x) => x.toMap()).toList(),
+      'userStories': userStories.map((x) => x.toMap()).toList(),
       'screens': screens.map((x) => x.toMap()).toList(),
       'platforms': platforms,
       'selectedTechnology': selectedTechnology,
@@ -119,6 +125,9 @@ class Project {
       ),
       features: List<Feature>.from(
         (map['features'] as List? ?? []).map((x) => Feature.fromMap(x)),
+      ),
+      userStories: List<UserStory>.from(
+        (map['userStories'] as List? ?? []).map((x) => UserStory.fromMap(x)),
       ),
       screens: List<ScreenDefinition>.from(
         (map['screens'] as List? ?? []).map((x) => ScreenDefinition.fromMap(x)),
