@@ -4,6 +4,7 @@ import 'user_story.dart';
 import 'screen_definition.dart';
 import 'architecture.dart';
 import 'development_plan.dart';
+import 'file_change.dart';
 
 enum ProjectStatus { draft, inProgress, completed, archived }
 
@@ -25,6 +26,7 @@ class Project {
   final String? selectedDatabase;
   final Architecture? architecture;
   final DevelopmentPlan? developmentPlan;
+  final List<FileChange> fileChanges;
 
   const Project({
     required this.id,
@@ -44,6 +46,7 @@ class Project {
     this.selectedDatabase,
     this.architecture,
     this.developmentPlan,
+    this.fileChanges = const [],
   });
 
   Project copyWith({
@@ -64,6 +67,7 @@ class Project {
     String? selectedDatabase,
     Architecture? architecture,
     DevelopmentPlan? developmentPlan,
+    List<FileChange>? fileChanges,
   }) {
     return Project(
       id: id ?? this.id,
@@ -83,6 +87,7 @@ class Project {
       selectedDatabase: selectedDatabase ?? this.selectedDatabase,
       architecture: architecture ?? this.architecture,
       developmentPlan: developmentPlan ?? this.developmentPlan,
+      fileChanges: fileChanges ?? this.fileChanges,
     );
   }
 
@@ -105,6 +110,7 @@ class Project {
       'selectedDatabase': selectedDatabase,
       'architecture': architecture?.toMap(),
       'developmentPlan': developmentPlan?.toMap(),
+      'fileChanges': fileChanges.map((x) => x.toMap()).toList(),
     };
   }
 
@@ -138,6 +144,9 @@ class Project {
       selectedDatabase: map['selectedDatabase'],
       architecture: map['architecture'] != null ? Architecture.fromMap(map['architecture']) : null,
       developmentPlan: map['developmentPlan'] != null ? DevelopmentPlan.fromMap(map['developmentPlan']) : null,
+      fileChanges: List<FileChange>.from(
+        (map['fileChanges'] as List? ?? []).map((x) => FileChange.fromMap(x)),
+      ),
     );
   }
 }
