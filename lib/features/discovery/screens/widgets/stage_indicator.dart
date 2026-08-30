@@ -23,6 +23,8 @@ class DiscoveryStageIndicator extends StatelessWidget {
         return "Selecting Technology";
       case DiscoveryStage.planning:
         return "Planning";
+      case DiscoveryStage.summary:
+        return "Discovery Complete";
     }
   }
 

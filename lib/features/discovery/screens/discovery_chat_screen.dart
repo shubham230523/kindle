@@ -7,6 +7,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../viewmodels/discovery_viewmodel.dart';
 import 'widgets/stage_indicator.dart';
+import 'widgets/discovery_summary_widget.dart';
 
 class DiscoveryChatScreen extends StatefulWidget {
   const DiscoveryChatScreen({super.key});
@@ -92,15 +93,25 @@ class _DiscoveryChatScreenState extends State<DiscoveryChatScreen> {
                         horizontal: AppConstants.spacingMd,
                         vertical: AppConstants.spacingSm,
                       ),
-                      itemCount: state.messages.length + (state.isAiTyping ? 1 : 0),
+                      itemCount: state.messages.length + (state.isAiTyping ? 1 : 0) + (state.generatedProject != null ? 1 : 0),
                       itemBuilder: (context, index) {
-                        if (index == state.messages.length && state.isAiTyping) {
+                        if (index < state.messages.length) {
+                          final message = state.messages[index];
+                          return message.isUser
+                              ? UserMessageBubble(message: message)
+                              : AiMessageBubble(message: message);
+                        }
+
+                        final relativeIndex = index - state.messages.length;
+                        if (state.isAiTyping && relativeIndex == 0) {
                           return const TypingIndicator();
                         }
-                        final message = state.messages[index];
-                        return message.isUser
-                            ? UserMessageBubble(message: message)
-                            : AiMessageBubble(message: message);
+
+                        if (state.generatedProject != null) {
+                          return DiscoverySummaryWidget(project: state.generatedProject!);
+                        }
+
+                        return const SizedBox.shrink();
                       },
                     ),
                   ),

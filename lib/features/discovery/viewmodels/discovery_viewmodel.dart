@@ -2,6 +2,9 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../../../shared/models/message.dart';
 import '../models/discovery_state.dart';
+import '../../project/models/project.dart';
+import '../../project/models/requirement.dart';
+import '../../project/models/feature.dart';
 
 class DiscoveryViewModel extends ChangeNotifier {
   DiscoveryState _state = const DiscoveryState();
@@ -67,14 +70,66 @@ class DiscoveryViewModel extends ChangeNotifier {
       } else {
         nextStage = DiscoveryStage.planning;
         responseContent = "Thank you! I've gathered all the information I need. I'm now processing your requirements to generate a project roadmap.";
+        
+        // Final transition to summary
+        _generateSummary();
+        return;
       }
     }
 
-    final double progress = nextStage == DiscoveryStage.planning 
+    final double progress = nextStage == DiscoveryStage.planning || nextStage == DiscoveryStage.summary
         ? 1.0 
         : (nextQuestionIndex + 1) / (_questions.length + 1);
 
     _simulateAiResponse(responseContent, nextStage, nextQuestionIndex, progress);
+  }
+
+  void _generateSummary() {
+    // Show AI message first
+    _simulateAiResponse(
+      "I've analyzed your requirements and generated a project summary. Here's what I've sparkled for you!",
+      DiscoveryStage.summary,
+      _questions.length,
+      1.0,
+    );
+
+    // Generate mock project based on answers
+    final targetUser = _state.answers[_questions[0]] ?? "General Users";
+    final problem = _state.answers[_questions[1]] ?? "General inefficiency";
+    final featuresText = _state.answers[_questions[2]] ?? "Feature A, Feature B, Feature C";
+    
+    final mockProject = Project(
+      id: "proj_${DateTime.now().millisecondsSinceEpoch}",
+      name: "Kindle Spark App",
+      description: "A solution focused on solving: $problem",
+      status: ProjectStatus.draft,
+      createdAt: DateTime.now(),
+      requirements: [
+        Requirement(
+          id: "req1",
+          title: "User Experience",
+          description: "Optimized for $targetUser",
+          priority: RequirementPriority.high,
+        ),
+        Requirement(
+          id: "req2",
+          title: "Core Solution",
+          description: problem,
+          priority: RequirementPriority.high,
+        ),
+      ],
+      features: featuresText.split(',').map((f) => Feature(
+        id: "feat_${f.trim()}",
+        name: f.trim(),
+        description: "Core functionality for ${f.trim()}",
+        category: "Core",
+      )).toList(),
+    );
+
+    Timer(const Duration(seconds: 2), () {
+      _state = _state.copyWith(generatedProject: mockProject);
+      notifyListeners();
+    });
   }
 
   void _simulateAiResponse(String content, DiscoveryStage nextStage, int nextQuestionIndex, double progress) {
