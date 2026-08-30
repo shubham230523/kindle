@@ -10,6 +10,7 @@ import 'build_dashboard_screen.dart';
 import 'testing_dashboard_screen.dart';
 import 'debug_agent_screen.dart';
 import 'fix_history_screen.dart';
+import 'project_artifacts_screen.dart';
 import '../../project/screens/requirements_list_screen.dart';
 import '../../project/screens/architecture_overview_screen.dart';
 import '../../project/screens/development_plan_screen.dart';
@@ -47,6 +48,7 @@ class _ProjectWorkspaceShellState extends State<ProjectWorkspaceShell> {
     const _WorkspaceDestination('Testing', Icons.bug_report_outlined, Icons.bug_report),
     const _WorkspaceDestination('Debug', Icons.healing_outlined, Icons.healing),
     const _WorkspaceDestination('Fix History', Icons.auto_fix_high_outlined, Icons.auto_fix_high),
+    const _WorkspaceDestination('Artifacts', Icons.inventory_2_outlined, Icons.inventory_2),
     const _WorkspaceDestination('Settings', Icons.settings_outlined, Icons.settings),
   ];
 
@@ -74,6 +76,8 @@ class _ProjectWorkspaceShellState extends State<ProjectWorkspaceShell> {
         return const DebugAgentScreen();
       case 10:
         return FixHistoryScreen(project: _viewModel.project);
+      case 11:
+        return ProjectArtifactsScreen(project: _viewModel.project);
       default:
         return Center(
           child: Column(

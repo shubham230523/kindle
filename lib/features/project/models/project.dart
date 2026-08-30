@@ -8,6 +8,7 @@ import 'file_change.dart';
 import 'build.dart';
 import 'test_run.dart';
 import 'fix_record.dart';
+import 'artifact.dart';
 
 enum ProjectStatus { draft, inProgress, completed, archived }
 
@@ -33,6 +34,7 @@ class Project {
   final List<ProjectBuild> builds;
   final List<TestRun> testRuns;
   final List<FixRecord> fixHistory;
+  final List<ProjectArtifact> artifacts;
 
   const Project({
     required this.id,
@@ -56,6 +58,7 @@ class Project {
     this.builds = const [],
     this.testRuns = const [],
     this.fixHistory = const [],
+    this.artifacts = const [],
   });
 
   Project copyWith({
@@ -80,6 +83,7 @@ class Project {
     List<ProjectBuild>? builds,
     List<TestRun>? testRuns,
     List<FixRecord>? fixHistory,
+    List<ProjectArtifact>? artifacts,
   }) {
     return Project(
       id: id ?? this.id,
@@ -103,6 +107,7 @@ class Project {
       builds: builds ?? this.builds,
       testRuns: testRuns ?? this.testRuns,
       fixHistory: fixHistory ?? this.fixHistory,
+      artifacts: artifacts ?? this.artifacts,
     );
   }
 
@@ -129,6 +134,7 @@ class Project {
       'builds': builds.map((x) => x.toMap()).toList(),
       'testRuns': testRuns.map((x) => x.toMap()).toList(),
       'fixHistory': fixHistory.map((x) => x.toMap()).toList(),
+      'artifacts': artifacts.map((x) => x.toMap()).toList(),
     };
   }
 
@@ -173,6 +179,9 @@ class Project {
       ),
       fixHistory: List<FixRecord>.from(
         (map['fixHistory'] as List? ?? []).map((x) => FixRecord.fromMap(x)),
+      ),
+      artifacts: List<ProjectArtifact>.from(
+        (map['artifacts'] as List? ?? []).map((x) => ProjectArtifact.fromMap(x)),
       ),
     );
   }
