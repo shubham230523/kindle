@@ -76,7 +76,7 @@ class _DiscoveryChatScreenState extends State<DiscoveryChatScreen> {
           if (state.errorMessage != null) {
             return KindleErrorState(
               message: state.errorMessage!,
-              onRetry: () => _viewModel.clearError(),
+              onRetry: () => _viewModel.retryLastMessage(),
             );
           }
 

@@ -2,26 +2,26 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import '../../../shared/models/message.dart';
 import '../models/discovery_state.dart';
+import '../models/discovery_backend_result.dart';
 import '../../project/models/project.dart';
 import '../../project/models/requirement.dart';
-import '../../project/models/feature.dart';
-import '../../project/models/user_story.dart';
+import '../../../core/services/discovery_service.dart';
 
 class DiscoveryViewModel extends ChangeNotifier {
+  final DiscoveryService _discoveryService;
+  
   DiscoveryState _state = const DiscoveryState();
   DiscoveryState get state => _state;
 
-  final List<String> _questions = [
-    "Who is the target user for this application?",
-    "What specific problem does the application solve for these users?",
-    "What are the top 3 core features you envision?",
-    "Will your application require user authentication (login/signup)?",
-    "Does the application need a backend service for data persistence or real-time features?",
-    "Which platforms should we target? (Mobile, Web, Desktop, or all?)",
-  ];
+  String? _lastUserMessage;
 
-  void sendMessage(String text) {
+  DiscoveryViewModel({DiscoveryService? discoveryService}) 
+      : _discoveryService = discoveryService ?? DiscoveryService();
+
+  void sendMessage(String text) async {
     if (text.trim().isEmpty) return;
+
+    _lastUserMessage = text;
 
     final userMessage = ChatMessage(
       id: DateTime.now().toIso8601String(),
@@ -31,144 +31,95 @@ class DiscoveryViewModel extends ChangeNotifier {
       status: MessageStatus.sent,
     );
 
-    // Store answer if we are currently asking questions
-    Map<String, String> updatedAnswers = Map.from(_state.answers);
-    if (_state.currentQuestionIndex >= 0 && _state.currentQuestionIndex < _questions.length) {
-      updatedAnswers[_questions[_state.currentQuestionIndex]] = text;
-    }
-
     _state = _state.copyWith(
       messages: [..._state.messages, userMessage],
       isAiTyping: true,
       errorMessage: null,
-      answers: updatedAnswers,
     );
     notifyListeners();
 
-    _processConversation();
+    await _callBackend(text);
   }
 
-  void _processConversation() {
-    DiscoveryStage nextStage = _state.stage;
-    String responseContent = "";
-    int nextQuestionIndex = _state.currentQuestionIndex;
+  Future<void> _callBackend(String idea) async {
+    try {
+      final result = await _discoveryService.processIdea(
+        idea, 
+        _state.messages.where((m) => m.sender != MessageSender.user || m.content != idea).toList(),
+      );
 
-    if (_state.currentQuestionIndex == -1) {
-      // First user message (Initial Idea)
-      nextQuestionIndex = 0;
-      nextStage = DiscoveryStage.gatheringRequirements;
-      responseContent = "That's an interesting idea! To help me understand better, I'd like to ask a few questions. First, ${_questions[0]}";
+      _handleBackendResponse(result);
+    } catch (e) {
+      _state = _state.copyWith(
+        isAiTyping: false,
+        errorMessage: 'Connection failed. Please check if the backend is running.',
+      );
+      notifyListeners();
+    }
+  }
+
+  void retryLastMessage() {
+    if (_lastUserMessage != null) {
+      _state = _state.copyWith(
+        isAiTyping: true,
+        errorMessage: null,
+      );
+      notifyListeners();
+      _callBackend(_lastUserMessage!);
+    }
+  }
+
+  void _handleBackendResponse(DiscoveryBackendResult result) {
+    final aiMessage = ChatMessage(
+      id: DateTime.now().toIso8601String(),
+      content: result.currentQuestion ?? "Discovery complete!",
+      sender: MessageSender.ai,
+      timestamp: DateTime.now(),
+    );
+
+    DiscoveryStage nextStage = _state.stage;
+    if (result.isDiscoveryComplete) {
+      nextStage = DiscoveryStage.summary;
+      _generateSummaryFromBackend(result);
     } else {
-      nextQuestionIndex++;
-      if (nextQuestionIndex < _questions.length) {
-        // Update stage based on question index
-        if (nextQuestionIndex == 2) {
-          nextStage = DiscoveryStage.definingFeatures;
-        } else if (nextQuestionIndex == 3) {
-          nextStage = DiscoveryStage.selectingTech;
-        }
-        responseContent = "Got it. Next: ${_questions[nextQuestionIndex]}";
+      // Map confidence to stages for progress indicator
+      if (result.confidence < 0.3) {
+        nextStage = DiscoveryStage.understandingIdea;
+      } else if (result.confidence < 0.6) {
+        nextStage = DiscoveryStage.gatheringRequirements;
       } else {
-        nextStage = DiscoveryStage.planning;
-        responseContent = "Thank you! I've gathered all the information I need. I'm now processing your requirements to generate a project roadmap.";
-        
-        // Final transition to summary
-        _generateSummary();
-        return;
+        nextStage = DiscoveryStage.definingFeatures;
       }
     }
 
-    final double progress = nextStage == DiscoveryStage.planning || nextStage == DiscoveryStage.summary
-        ? 1.0 
-        : (nextQuestionIndex + 1) / (_questions.length + 1);
-
-    _simulateAiResponse(responseContent, nextStage, nextQuestionIndex, progress);
+    _state = _state.copyWith(
+      messages: [..._state.messages, aiMessage],
+      isAiTyping: false,
+      stage: nextStage,
+      progress: result.confidence,
+    );
+    notifyListeners();
   }
 
-  void _generateSummary() {
-    // Show AI message first
-    _simulateAiResponse(
-      "I've analyzed your requirements and generated a project summary. Here's what I've sparkled for you!",
-      DiscoveryStage.summary,
-      _questions.length,
-      1.0,
-    );
-
-    // Generate mock project based on answers
-    final targetUser = _state.answers[_questions[0]] ?? "General Users";
-    final problem = _state.answers[_questions[1]] ?? "General inefficiency";
-    final featuresText = _state.answers[_questions[2]] ?? "Feature A, Feature B, Feature C";
-    
+  void _generateSummaryFromBackend(DiscoveryBackendResult result) {
+    // Generate a project based on the structured requirements from backend
     final mockProject = Project(
       id: "proj_${DateTime.now().millisecondsSinceEpoch}",
-      name: "Kindle Spark App",
-      description: "A solution focused on solving: $problem",
-      targetUsers: targetUser,
-      problemStatement: problem,
+      name: "Sparked App",
+      description: result.understandingSummary,
       status: ProjectStatus.draft,
       createdAt: DateTime.now(),
-      requirements: [
-        Requirement(
-          id: "req1",
-          title: "Offline Support",
-          description: "Users should be able to access core data without internet.",
-          priority: RequirementPriority.high,
-          type: RequirementType.nonFunctional,
-        ),
-        Requirement(
-          id: "req2",
-          title: "Push Notifications",
-          description: "Notify users about critical updates.",
-          priority: RequirementPriority.medium,
-          type: RequirementType.functional,
-        ),
-      ],
-      features: featuresText.split(',').map((f) => Feature(
-        id: "feat_${f.trim()}",
-        name: f.trim(),
-        description: "Core functionality for ${f.trim()}",
-        category: "Core",
+      requirements: result.discoveredRequirements.map((r) => Requirement(
+        id: DateTime.now().toString(),
+        title: r,
+        description: r,
+        priority: RequirementPriority.high,
       )).toList(),
-      userStories: [
-        UserStory(
-          id: "us1",
-          actor: "New User",
-          action: "sign up with email",
-          benefit: "I can start using the application immediately.",
-        ),
-        UserStory(
-          id: "us2",
-          actor: "Frequent User",
-          action: "bookmark favorite items",
-          benefit: "I can quickly access them later.",
-        ),
-      ],
+      features: [], // Backend could return these too in the future
+      userStories: [],
     );
 
-    Timer(const Duration(seconds: 2), () {
-      _state = _state.copyWith(generatedProject: mockProject);
-      notifyListeners();
-    });
-  }
-
-  void _simulateAiResponse(String content, DiscoveryStage nextStage, int nextQuestionIndex, double progress) {
-    Timer(const Duration(seconds: 1), () {
-      final aiMessage = ChatMessage(
-        id: DateTime.now().toIso8601String(),
-        content: content,
-        sender: MessageSender.ai,
-        timestamp: DateTime.now(),
-      );
-
-      _state = _state.copyWith(
-        messages: [..._state.messages, aiMessage],
-        isAiTyping: false,
-        stage: nextStage,
-        currentQuestionIndex: nextQuestionIndex,
-        progress: progress,
-      );
-      notifyListeners();
-    });
+    _state = _state.copyWith(generatedProject: mockProject);
   }
 
   void clearError() {
