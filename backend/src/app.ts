@@ -5,6 +5,7 @@ import aiRoutes from './routes/v1/ai.js';
 import discoveryRoutes from './routes/v1/discovery.js';
 import productRoutes from './routes/v1/product.js';
 import technologyRoutes from './routes/v1/technology.js';
+import architectureRoutes from './routes/v1/architecture.js';
 import errorHandler from './plugins/error-handler.js';
 
 export async function buildApp() {
@@ -30,6 +31,7 @@ export async function buildApp() {
   await app.register(discoveryRoutes, { prefix: '/api/v1' });
   await app.register(productRoutes, { prefix: '/api/v1' });
   await app.register(technologyRoutes, { prefix: '/api/v1' });
+  await app.register(architectureRoutes, { prefix: '/api/v1' });
 
   return app;
 }
