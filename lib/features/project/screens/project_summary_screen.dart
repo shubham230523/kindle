@@ -3,6 +3,7 @@ import '../models/project.dart';
 import 'project_edit_screen.dart';
 import 'platform_selection_screen.dart';
 import 'technology_selection_screen.dart';
+import 'backend_selection_screen.dart';
 import '../../../shared/widgets/kindle_card.dart';
 import '../../../shared/widgets/section_title.dart';
 import '../../../shared/widgets/kindle_button.dart';
@@ -76,6 +77,21 @@ class _ProjectSummaryScreenState extends State<ProjectSummaryScreen> {
     }
   }
 
+  void _handleBackendSelection() async {
+    final updatedProject = await Navigator.push<Project>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => BackendSelectionScreen(project: _project),
+      ),
+    );
+
+    if (updatedProject != null) {
+      setState(() {
+        _project = updatedProject;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -110,12 +126,17 @@ class _ProjectSummaryScreenState extends State<ProjectSummaryScreen> {
                     _TechSection(project: _project),
                     const SizedBox(height: AppConstants.spacingLg),
                   ],
+                  if (_project.selectedBackend != null || _project.selectedDatabase != null) ...[
+                    _BackendDatabaseSection(project: _project),
+                    const SizedBox(height: AppConstants.spacingLg),
+                  ],
                   _FeaturesSection(project: _project),
                   const SizedBox(height: AppConstants.spacingLg),
                   _ActionSection(
                     project: _project,
                     onPlatformSelect: _handlePlatformSelection,
                     onTechSelect: _handleTechSelection,
+                    onBackendSelect: _handleBackendSelection,
                     onEdit: _handleEdit,
                   ),
                   const SizedBox(height: AppConstants.spacingXl),
@@ -347,6 +368,56 @@ class _TechSection extends StatelessWidget {
   }
 }
 
+class _BackendDatabaseSection extends StatelessWidget {
+  final Project project;
+
+  const _BackendDatabaseSection({required this.project});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const SectionTitle(title: 'Infrastructure'),
+            TextButton(
+              onPressed: () {
+                // Navigate back to backend selection
+              },
+              child: const Text('Change'),
+            ),
+          ],
+        ),
+        KindleCard(
+          child: Column(
+            children: [
+              _buildInfraRow(Icons.cloud_outlined, "Backend", project.selectedBackend ?? "None"),
+              const Divider(),
+              _buildInfraRow(Icons.storage_outlined, "Database", project.selectedDatabase ?? "None"),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInfraRow(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        children: [
+          Icon(icon, size: 20, color: AppColors.textSecondary),
+          const SizedBox(width: AppConstants.spacingMd),
+          Text("$label: ", style: const TextStyle(color: AppColors.textSecondary)),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+}
+
 class _FeaturesSection extends StatelessWidget {
   final Project project;
 
@@ -401,12 +472,14 @@ class _ActionSection extends StatelessWidget {
   final Project project;
   final VoidCallback onPlatformSelect;
   final VoidCallback onTechSelect;
+  final VoidCallback onBackendSelect;
   final VoidCallback onEdit;
 
   const _ActionSection({
     required this.project,
     required this.onPlatformSelect,
     required this.onTechSelect,
+    required this.onBackendSelect,
     required this.onEdit,
   });
 
@@ -414,6 +487,7 @@ class _ActionSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasPlatforms = project.platforms.isNotEmpty;
     final hasTech = project.selectedTechnology != null;
+    final hasInfra = project.selectedBackend != null || project.selectedDatabase != null;
 
     return Column(
       children: [
@@ -431,6 +505,14 @@ class _ActionSection extends StatelessWidget {
             child: KindleButton(
               text: 'Choose Spark Stack',
               onPressed: onTechSelect,
+            ),
+          )
+        else if (!hasInfra)
+          SizedBox(
+            width: double.infinity,
+            child: KindleButton(
+              text: 'Configure Infrastructure',
+              onPressed: onBackendSelect,
             ),
           )
         else
