@@ -9,6 +9,7 @@ import architectureRoutes from './routes/v1/architecture.js';
 import planRoutes from './routes/v1/plan.js';
 import projectRoutes from './routes/v1/projects.js';
 import codingRoutes from './routes/v1/coding.js';
+import developmentRoutes from './routes/v1/development.js';
 import errorHandler from './plugins/error-handler.js';
 import { workspaceService } from './services/workspace/workspace.service.js';
 
@@ -42,6 +43,7 @@ export async function buildApp() {
   await app.register(planRoutes, { prefix: '/api/v1' });
   await app.register(projectRoutes, { prefix: '/api/v1' });
   await app.register(codingRoutes, { prefix: '/api/v1' });
+  await app.register(developmentRoutes, { prefix: '/api/v1' });
 
   return app;
 }
