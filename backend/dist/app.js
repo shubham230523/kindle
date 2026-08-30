@@ -12,6 +12,7 @@ const discovery_js_1 = __importDefault(require("./routes/v1/discovery.js"));
 const product_js_1 = __importDefault(require("./routes/v1/product.js"));
 const technology_js_1 = __importDefault(require("./routes/v1/technology.js"));
 const architecture_js_1 = __importDefault(require("./routes/v1/architecture.js"));
+const plan_js_1 = __importDefault(require("./routes/v1/plan.js"));
 const error_handler_js_1 = __importDefault(require("./plugins/error-handler.js"));
 async function buildApp() {
     const app = (0, fastify_1.default)({
@@ -35,5 +36,6 @@ async function buildApp() {
     await app.register(product_js_1.default, { prefix: '/api/v1' });
     await app.register(technology_js_1.default, { prefix: '/api/v1' });
     await app.register(architecture_js_1.default, { prefix: '/api/v1' });
+    await app.register(plan_js_1.default, { prefix: '/api/v1' });
     return app;
 }
