@@ -4,11 +4,13 @@ class ExecutionLog {
   final DateTime timestamp;
   final String message;
   final String? level;
+  final String? details;
 
   const ExecutionLog({
     required this.timestamp,
     required this.message,
     this.level,
+    this.details,
   });
 
   Map<String, dynamic> toMap() {
@@ -16,6 +18,7 @@ class ExecutionLog {
       'timestamp': timestamp.toIso8601String(),
       'message': message,
       'level': level,
+      'details': details,
     };
   }
 
@@ -24,6 +27,7 @@ class ExecutionLog {
       timestamp: DateTime.tryParse(map['timestamp'] ?? '') ?? DateTime.now(),
       message: map['message'] ?? '',
       level: map['level'],
+      details: map['details'],
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'agent_execution_log_screen.dart';
 import '../../project/models/agent.dart';
 import '../../project/models/agent_execution.dart';
 import '../../../shared/widgets/kindle_card.dart';
@@ -168,6 +169,14 @@ class _AgentActivityCard extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppConstants.spacingMd),
       child: KindleCard(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => AgentExecutionLogScreen(agent: data.agent),
+            ),
+          );
+        },
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
