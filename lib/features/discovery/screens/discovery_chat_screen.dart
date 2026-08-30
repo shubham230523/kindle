@@ -83,6 +83,13 @@ class _DiscoveryChatScreenState extends State<DiscoveryChatScreen> {
               constraints: const BoxConstraints(maxWidth: kMaxContentWidth),
               child: Column(
                 children: [
+                  if (state.progress > 0 && state.progress < 1.0)
+                    LinearProgressIndicator(
+                      value: state.progress,
+                      backgroundColor: Colors.grey.shade200,
+                      valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
+                      minHeight: 2,
+                    ),
                   Expanded(
                     child: ListView.builder(
                       controller: _scrollController,
