@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../models/message.dart';
-import '../widgets/chat_bubble.dart';
-import '../utils/responsive_layout.dart';
+import '../../../shared/models/message.dart';
+import '../../../shared/widgets/chat_bubble.dart';
+import '../../../core/utils/responsive_layout.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});

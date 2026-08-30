@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'chat_screen.dart';
-import '../utils/responsive_layout.dart';
+import '../../workspace/screens/chat_screen.dart';
+import '../../../core/utils/responsive_layout.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
