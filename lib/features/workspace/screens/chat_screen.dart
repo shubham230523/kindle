@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../shared/models/message.dart';
-import '../../../shared/widgets/chat_bubble.dart';
+import '../../../shared/widgets/message_bubbles.dart';
+import '../../../shared/widgets/typing_indicator.dart';
 import '../../../core/utils/responsive_layout.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
@@ -13,34 +14,41 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
-  final List<Message> _messages = [];
+  final List<ChatMessage> _messages = [];
   final TextEditingController _controller = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  bool _isAiTyping = false;
 
   void _sendMessage() {
-    if (_controller.text.trim().isEmpty) return;
+    final text = _controller.text.trim();
+    if (text.isEmpty) return;
+
+    final userMessage = ChatMessage(
+      id: DateTime.now().toIso8601String(),
+      content: text,
+      sender: MessageSender.user,
+      timestamp: DateTime.now(),
+      status: MessageStatus.sent,
+    );
 
     setState(() {
-      _messages.add(
-        Message(
-          text: _controller.text.trim(),
-          isUser: true,
-          timestamp: DateTime.now(),
-        ),
-      );
+      _messages.add(userMessage);
+      _isAiTyping = true;
     });
 
     _controller.clear();
     _scrollToBottom();
 
     // Simulate agent response
-    Future.delayed(const Duration(milliseconds: 500), () {
+    Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         setState(() {
+          _isAiTyping = false;
           _messages.add(
-            Message(
-              text: "I'm your Kindle agent. How can I help you spark something today?",
-              isUser: false,
+            ChatMessage(
+              id: DateTime.now().toIso8601String(),
+              content: "I'm your Kindle agent. How can I help you spark something today?",
+              sender: MessageSender.ai,
               timestamp: DateTime.now(),
             ),
           );
@@ -80,9 +88,17 @@ class _ChatScreenState extends State<ChatScreen> {
                     horizontal: AppConstants.spacingMd,
                     vertical: AppConstants.spacingSm,
                   ),
-                  itemCount: _messages.length,
+                  itemCount: _messages.length + (_isAiTyping ? 1 : 0),
                   itemBuilder: (context, index) {
-                    return ChatBubble(message: _messages[index]);
+                    if (index == _messages.length && _isAiTyping) {
+                      return const TypingIndicator();
+                    }
+                    final message = _messages[index];
+                    if (message.isUser) {
+                      return UserMessageBubble(message: message);
+                    } else {
+                      return AiMessageBubble(message: message);
+                    }
                   },
                 ),
               ),
