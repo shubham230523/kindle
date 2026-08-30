@@ -8,6 +8,8 @@ class Project {
   final String id;
   final String name;
   final String description;
+  final String? targetUsers;
+  final String? problemStatement;
   final ProjectStatus status;
   final DateTime createdAt;
   final List<Requirement> requirements;
@@ -18,6 +20,8 @@ class Project {
     required this.id,
     required this.name,
     required this.description,
+    this.targetUsers,
+    this.problemStatement,
     required this.status,
     required this.createdAt,
     this.requirements = const [],
@@ -29,6 +33,8 @@ class Project {
     String? id,
     String? name,
     String? description,
+    String? targetUsers,
+    String? problemStatement,
     ProjectStatus? status,
     DateTime? createdAt,
     List<Requirement>? requirements,
@@ -39,6 +45,8 @@ class Project {
       id: id ?? this.id,
       name: name ?? this.name,
       description: description ?? this.description,
+      targetUsers: targetUsers ?? this.targetUsers,
+      problemStatement: problemStatement ?? this.problemStatement,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       requirements: requirements ?? this.requirements,
@@ -52,6 +60,8 @@ class Project {
       'id': id,
       'name': name,
       'description': description,
+      'targetUsers': targetUsers,
+      'problemStatement': problemStatement,
       'status': status.name,
       'createdAt': createdAt.toIso8601String(),
       'requirements': requirements.map((x) => x.toMap()).toList(),
@@ -65,6 +75,8 @@ class Project {
       id: map['id'] ?? '',
       name: map['name'] ?? '',
       description: map['description'] ?? '',
+      targetUsers: map['targetUsers'],
+      problemStatement: map['problemStatement'],
       status: ProjectStatus.values.firstWhere(
         (e) => e.name == map['status'],
         orElse: () => ProjectStatus.draft,

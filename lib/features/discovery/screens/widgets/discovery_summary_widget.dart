@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../project/models/project.dart';
+import '../../../project/screens/project_summary_screen.dart';
 import '../../../../shared/widgets/kindle_card.dart';
 import '../../../../shared/widgets/section_title.dart';
 import '../../../../core/theme/app_colors.dart';
@@ -67,7 +68,12 @@ class DiscoverySummaryWidget extends StatelessWidget {
           const SizedBox(height: AppConstants.spacingMd),
           ElevatedButton(
             onPressed: () {
-              // Action to proceed to workspace
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => ProjectSummaryScreen(project: project),
+                ),
+              );
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,

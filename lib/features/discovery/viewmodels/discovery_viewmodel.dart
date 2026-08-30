@@ -102,6 +102,8 @@ class DiscoveryViewModel extends ChangeNotifier {
       id: "proj_${DateTime.now().millisecondsSinceEpoch}",
       name: "Kindle Spark App",
       description: "A solution focused on solving: $problem",
+      targetUsers: targetUser,
+      problemStatement: problem,
       status: ProjectStatus.draft,
       createdAt: DateTime.now(),
       requirements: [
