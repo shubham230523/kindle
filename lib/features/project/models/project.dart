@@ -16,6 +16,7 @@ class Project {
   final List<Feature> features;
   final List<ScreenDefinition> screens;
   final List<String> platforms;
+  final String? selectedTechnology;
 
   const Project({
     required this.id,
@@ -29,6 +30,7 @@ class Project {
     this.features = const [],
     this.screens = const [],
     this.platforms = const [],
+    this.selectedTechnology,
   });
 
   Project copyWith({
@@ -43,6 +45,7 @@ class Project {
     List<Feature>? features,
     List<ScreenDefinition>? screens,
     List<String>? platforms,
+    String? selectedTechnology,
   }) {
     return Project(
       id: id ?? this.id,
@@ -56,6 +59,7 @@ class Project {
       features: features ?? this.features,
       screens: screens ?? this.screens,
       platforms: platforms ?? this.platforms,
+      selectedTechnology: selectedTechnology ?? this.selectedTechnology,
     );
   }
 
@@ -72,6 +76,7 @@ class Project {
       'features': features.map((x) => x.toMap()).toList(),
       'screens': screens.map((x) => x.toMap()).toList(),
       'platforms': platforms,
+      'selectedTechnology': selectedTechnology,
     };
   }
 
@@ -97,6 +102,7 @@ class Project {
         (map['screens'] as List? ?? []).map((x) => ScreenDefinition.fromMap(x)),
       ),
       platforms: List<String>.from(map['platforms'] as List? ?? []),
+      selectedTechnology: map['selectedTechnology'],
     );
   }
 }

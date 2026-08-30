@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../models/project.dart';
 import 'project_edit_screen.dart';
 import 'platform_selection_screen.dart';
+import 'technology_selection_screen.dart';
 import '../../../shared/widgets/kindle_card.dart';
 import '../../../shared/widgets/section_title.dart';
 import '../../../shared/widgets/kindle_button.dart';
@@ -60,6 +61,21 @@ class _ProjectSummaryScreenState extends State<ProjectSummaryScreen> {
     }
   }
 
+  void _handleTechSelection() async {
+    final updatedProject = await Navigator.push<Project>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TechnologySelectionScreen(project: _project),
+      ),
+    );
+
+    if (updatedProject != null) {
+      setState(() {
+        _project = updatedProject;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -90,10 +106,16 @@ class _ProjectSummaryScreenState extends State<ProjectSummaryScreen> {
                     _PlatformsSection(project: _project),
                     const SizedBox(height: AppConstants.spacingLg),
                   ],
+                  if (_project.selectedTechnology != null) ...[
+                    _TechSection(project: _project),
+                    const SizedBox(height: AppConstants.spacingLg),
+                  ],
                   _FeaturesSection(project: _project),
                   const SizedBox(height: AppConstants.spacingLg),
                   _ActionSection(
-                    onContinue: _handlePlatformSelection,
+                    project: _project,
+                    onPlatformSelect: _handlePlatformSelection,
+                    onTechSelect: _handleTechSelection,
                     onEdit: _handleEdit,
                   ),
                   const SizedBox(height: AppConstants.spacingXl),
@@ -114,6 +136,8 @@ class _HeaderSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bool isSparked = project.platforms.isNotEmpty && project.selectedTechnology != null;
+    
     return Row(
       children: [
         Container(
@@ -148,13 +172,13 @@ class _HeaderSection extends StatelessWidget {
                   vertical: 2,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.green.withValues(alpha: 0.1),
+                  color: (isSparked ? Colors.blue : Colors.green).withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(AppConstants.radiusSm),
                 ),
                 child: Text(
-                  'Sparked Draft',
+                  isSparked ? 'Project Roadmap' : 'Sparked Draft',
                   style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                        color: Colors.green.shade700,
+                        color: isSparked ? Colors.blue.shade700 : Colors.green.shade700,
                         fontWeight: FontWeight.bold,
                       ),
                 ),
@@ -253,7 +277,18 @@ class _PlatformsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const SectionTitle(title: 'Target Platforms'),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const SectionTitle(title: 'Target Platforms'),
+            TextButton(
+              onPressed: () {
+                // Should navigate to platform selection again if needed
+              },
+              child: const Text('Change'),
+            ),
+          ],
+        ),
         KindleCard(
           child: Wrap(
             spacing: AppConstants.spacingSm,
@@ -266,6 +301,45 @@ class _PlatformsSection extends StatelessWidget {
                 labelStyle: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
               );
             }).toList(),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TechSection extends StatelessWidget {
+  final Project project;
+
+  const _TechSection({required this.project});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const SectionTitle(title: 'Spark Stack'),
+            TextButton(
+              onPressed: () {
+                // Navigate back to tech selection
+              },
+              child: const Text('Change'),
+            ),
+          ],
+        ),
+        KindleCard(
+          child: Row(
+            children: [
+              const Icon(Icons.layers_outlined, color: AppColors.primary),
+              const SizedBox(width: AppConstants.spacingMd),
+              Text(
+                project.selectedTechnology ?? 'None selected',
+                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ],
           ),
         ),
       ],
@@ -324,25 +398,51 @@ class _FeaturesSection extends StatelessWidget {
 }
 
 class _ActionSection extends StatelessWidget {
-  final VoidCallback onContinue;
+  final Project project;
+  final VoidCallback onPlatformSelect;
+  final VoidCallback onTechSelect;
   final VoidCallback onEdit;
 
   const _ActionSection({
-    required this.onContinue,
+    required this.project,
+    required this.onPlatformSelect,
+    required this.onTechSelect,
     required this.onEdit,
   });
 
   @override
   Widget build(BuildContext context) {
+    final hasPlatforms = project.platforms.isNotEmpty;
+    final hasTech = project.selectedTechnology != null;
+
     return Column(
       children: [
-        SizedBox(
-          width: double.infinity,
-          child: KindleButton(
-            text: 'Create Project Workspace',
-            onPressed: onContinue,
+        if (!hasPlatforms)
+          SizedBox(
+            width: double.infinity,
+            child: KindleButton(
+              text: 'Select Target Platforms',
+              onPressed: onPlatformSelect,
+            ),
+          )
+        else if (!hasTech)
+          SizedBox(
+            width: double.infinity,
+            child: KindleButton(
+              text: 'Choose Spark Stack',
+              onPressed: onTechSelect,
+            ),
+          )
+        else
+          SizedBox(
+            width: double.infinity,
+            child: KindleButton(
+              text: 'Create Project Workspace',
+              onPressed: () {
+                // Final action
+              },
+            ),
           ),
-        ),
         const SizedBox(height: AppConstants.spacingMd),
         SizedBox(
           width: double.infinity,
