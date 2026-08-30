@@ -1,8 +1,11 @@
 import { codingAgent } from '../ai/coding.agent.js';
+import { buildAgent } from '../ai/build.agent.js';
+import { debugAgent } from '../ai/debug.agent.js';
 import { codeChangeService } from './code-change.service.js';
 import { executionService } from './execution.service.js';
 import { workspaceService } from './workspace.service.js';
 import { ExecutionStatus } from '../../models/execution.js';
+import { BuildStatus } from '../../models/build.js';
 export class DevelopmentOrchestrator {
     async runTask(projectId, task, architecture) {
         const executionId = `exec_${Date.now()}`;
@@ -34,9 +37,22 @@ export class DevelopmentOrchestrator {
             // 3. Apply changes via CodeChangeService
             const checkpointId = await codeChangeService.applyChanges(projectId, result.changes, `Task: ${task.title} - ${result.explanation}`);
             execution.checkpointId = checkpointId;
-            execution.status = ExecutionStatus.completed;
+            // 4. Trigger Build Agent
+            execution.logs.push(executionService.createLog('Triggering Build Agent for verification...'));
+            await executionService.recordExecution(execution);
+            const buildResult = await buildAgent.buildProject(projectId, architecture.technology || 'flutter');
+            if (buildResult.status === BuildStatus.successful) {
+                execution.logs.push(executionService.createLog('Build successful. Verification complete.'));
+                execution.status = ExecutionStatus.completed;
+            }
+            else {
+                execution.logs.push(executionService.createLog('Build failed. Triggering Debug Agent...', buildResult.output));
+                // 5. Trigger Debug Agent
+                const debugResult = await debugAgent.analyzeFailure(projectId, buildResult.output, task.description);
+                execution.logs.push(executionService.createLog('Debug Analysis Complete', debugResult.rootCause));
+                execution.status = ExecutionStatus.failed; // Still mark as failed for this run, fix will be next task
+            }
             execution.completedAt = new Date().toISOString();
-            execution.logs.push(executionService.createLog('Task execution finished successfully.'));
         }
         catch (error) {
             execution.status = ExecutionStatus.failed;
