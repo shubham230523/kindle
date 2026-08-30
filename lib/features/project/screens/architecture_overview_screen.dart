@@ -28,9 +28,24 @@ class ArchitectureOverviewScreen extends StatelessWidget {
           Module(name: 'Workspace', responsibility: 'Project management and roadmap', dependencies: ['Domain', 'Data']),
         ],
         technologyDependencies: [
-          TechnologyDependency(name: 'Flutter Bloc', purpose: 'State management'),
-          TechnologyDependency(name: 'Dio', purpose: 'Network requests'),
-          TechnologyDependency(name: 'GetIt', purpose: 'Dependency injection'),
+          TechnologyDependency(
+            name: 'flutter_bloc',
+            purpose: 'State management',
+            category: 'UI Logic',
+            whySelected: 'Predictable state management with easy testing and separation of concerns.',
+          ),
+          TechnologyDependency(
+            name: 'dio',
+            purpose: 'Networking',
+            category: 'Data',
+            whySelected: 'Powerful HTTP client with interceptors and robust error handling.',
+          ),
+          TechnologyDependency(
+            name: 'get_it',
+            purpose: 'Service Locator',
+            category: 'Core',
+            whySelected: 'Fast and simple dependency injection for decoupling components.',
+          ),
         ],
       );
     } else if (tech.contains('web')) {
@@ -42,9 +57,24 @@ class ArchitectureOverviewScreen extends StatelessWidget {
           Module(name: 'User Management', responsibility: 'RBAC and Profiles'),
         ],
         technologyDependencies: [
-          TechnologyDependency(name: 'Next.js', purpose: 'Full-stack framework'),
-          TechnologyDependency(name: 'Prisma', purpose: 'ORM'),
-          TechnologyDependency(name: 'Tailwind CSS', purpose: 'Styling'),
+          TechnologyDependency(
+            name: 'next.js',
+            purpose: 'Full-stack framework',
+            category: 'Frontend/Core',
+            whySelected: 'Optimized rendering strategies and built-in API routes.',
+          ),
+          TechnologyDependency(
+            name: 'prisma',
+            purpose: 'ORM',
+            category: 'Data',
+            whySelected: 'Type-safe database client for efficient data modeling and access.',
+          ),
+          TechnologyDependency(
+            name: 'tailwind_css',
+            purpose: 'Styling',
+            category: 'UI',
+            whySelected: 'Utility-first approach for rapid and consistent design implementation.',
+          ),
         ],
       );
     } else {
@@ -56,8 +86,18 @@ class ArchitectureOverviewScreen extends StatelessWidget {
           Module(name: 'Feature A', responsibility: 'Primary business value'),
         ],
         technologyDependencies: [
-          TechnologyDependency(name: 'Retrofit', purpose: 'REST Client'),
-          TechnologyDependency(name: 'Dagger Hilt', purpose: 'DI'),
+          TechnologyDependency(
+            name: 'retrofit',
+            purpose: 'REST Client',
+            category: 'Networking',
+            whySelected: 'Declarative API definition and seamless serialization.',
+          ),
+          TechnologyDependency(
+            name: 'dagger_hilt',
+            purpose: 'Dependency Injection',
+            category: 'Core',
+            whySelected: 'Standardized DI framework for high-scale Android applications.',
+          ),
         ],
       );
     }
@@ -225,15 +265,58 @@ class _DependenciesCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return KindleCard(
-      child: Column(
-        children: dependencies.map((dep) => ListTile(
-          dense: true,
-          title: Text(dep.name, style: const TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: Text(dep.purpose),
-          leading: const Icon(Icons.extension_outlined, size: 20),
-        )).toList(),
-      ),
+    return Column(
+      children: dependencies.map((dep) => Padding(
+        padding: const EdgeInsets.only(bottom: AppConstants.spacingMd),
+        child: KindleCard(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(dep.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppConstants.radiusSm),
+                    ),
+                    child: Text(
+                      dep.category,
+                      style: const TextStyle(fontSize: 10, color: AppColors.primary, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppConstants.spacingSm),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Icon(Icons.info_outline, size: 14, color: AppColors.textSecondary),
+                  const SizedBox(width: AppConstants.spacingXs),
+                  Expanded(
+                    child: Text(
+                      'Purpose: ${dep.purpose}',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Selection Strategy:',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                dep.whySelected,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
+              ),
+            ],
+          ),
+        ),
+      )).toList(),
     );
   }
 }
