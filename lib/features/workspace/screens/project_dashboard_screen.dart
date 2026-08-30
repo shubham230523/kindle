@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../project/models/project.dart';
+import '../../project/models/task.dart';
 import '../../../shared/widgets/kindle_card.dart';
 import '../../../shared/widgets/section_title.dart';
 import '../../../core/theme/app_colors.dart';
@@ -34,7 +35,7 @@ class ProjectDashboardScreen extends StatelessWidget {
                 children: [
                   _ProjectHeader(project: project),
                   const SizedBox(height: AppConstants.spacingLg),
-                  _ProgressSection(),
+                  _ProgressSection(project: project),
                   const SizedBox(height: AppConstants.spacingLg),
                   _TechnicalStackSection(project: project),
                   const SizedBox(height: AppConstants.spacingLg),
@@ -118,30 +119,49 @@ class _StatusBadge extends StatelessWidget {
 }
 
 class _ProgressSection extends StatelessWidget {
+  final Project project;
+  const _ProgressSection({required this.project});
+
   @override
   Widget build(BuildContext context) {
+    final plan = project.developmentPlan;
+    int totalTasks = 0;
+    int doneTasks = 0;
+    
+    if (plan != null) {
+      for (final phase in plan.phases) {
+        totalTasks += phase.tasks.length;
+        doneTasks += phase.tasks.where((t) => t.status == TaskStatus.done).length;
+      }
+    }
+    
+    final progress = totalTasks == 0 ? 0.0 : doneTasks / totalTasks;
+
     return KindleCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SectionTitle(title: 'Development Progress', subtitle: 'Phases 1-2 of 6 complete'),
+          SectionTitle(
+            title: 'Development Progress',
+            subtitle: doneTasks == totalTasks ? 'Project complete!' : '$doneTasks of $totalTasks tasks complete',
+          ),
           const SizedBox(height: AppConstants.spacingSm),
           ClipRRect(
             borderRadius: BorderRadius.circular(AppConstants.radiusSm),
-            child: const LinearProgressIndicator(
-              value: 0.35,
+            child: LinearProgressIndicator(
+              value: progress,
               minHeight: 8,
-              backgroundColor: Color(0xFFF0F0F0),
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.primary),
+              backgroundColor: const Color(0xFFF0F0F0),
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
             ),
           ),
           const SizedBox(height: AppConstants.spacingMd),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildStat(context, 'Tasks Done', '4'),
-              _buildStat(context, 'In Progress', '2'),
-              _buildStat(context, 'Total Files', '12'),
+              _buildStat(context, 'Tasks Done', '$doneTasks'),
+              _buildStat(context, 'In Progress', '${totalTasks - doneTasks}'),
+              _buildStat(context, 'Total Phases', '${plan?.phases.length ?? 0}'),
             ],
           ),
         ],

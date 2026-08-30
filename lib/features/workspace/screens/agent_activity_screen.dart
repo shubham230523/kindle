@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'agent_execution_log_screen.dart';
+import '../viewmodels/workspace_viewmodel.dart';
 import '../../project/models/agent.dart';
 import '../../project/models/agent_execution.dart';
 import '../../../shared/widgets/kindle_card.dart';
@@ -9,114 +10,33 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/responsive_layout.dart';
 
 class AgentActivityScreen extends StatefulWidget {
-  const AgentActivityScreen({super.key});
+  final WorkspaceViewModel viewModel;
+  const AgentActivityScreen({super.key, required this.viewModel});
 
   @override
   State<AgentActivityScreen> createState() => _AgentActivityScreenState();
 }
 
 class _AgentActivityScreenState extends State<AgentActivityScreen> {
-  final List<_AgentStatusData> _agents = [
-    _AgentStatusData(
-      agent: const Agent(
-        id: 'a1',
-        name: 'Discovery Agent',
-        type: AgentType.manager,
-        description: 'Understands user ideas and sparks initial requirements.',
-      ),
-      currentTask: 'Idle',
-      status: ExecutionStatus.idle,
-      progress: 1.0,
-      activity: 'Discovery conversation complete.',
-    ),
-    _AgentStatusData(
-      agent: const Agent(
-        id: 'a2',
-        name: 'Product Agent',
-        type: AgentType.manager,
-        description: 'Formalizes requirements and user stories.',
-      ),
-      currentTask: 'Refining Requirements',
-      status: ExecutionStatus.running,
-      progress: 0.85,
-      activity: 'Adding non-functional requirements for offline support.',
-    ),
-    _AgentStatusData(
-      agent: const Agent(
-        id: 'a3',
-        name: 'Technology Agent',
-        type: AgentType.architect,
-        description: 'Analyzes and recommends technical stacks.',
-      ),
-      currentTask: 'Idle',
-      status: ExecutionStatus.completed,
-      progress: 1.0,
-      activity: 'Finalized Flutter + Firebase recommendation.',
-    ),
-    _AgentStatusData(
-      agent: const Agent(
-        id: 'a4',
-        name: 'Architecture Agent',
-        type: AgentType.architect,
-        description: 'Generates system design and module blueprints.',
-      ),
-      currentTask: 'Idle',
-      status: ExecutionStatus.completed,
-      progress: 1.0,
-      activity: 'CLEAN architecture blueprint generated.',
-    ),
-    _AgentStatusData(
-      agent: const Agent(
-        id: 'a5',
-        name: 'Coding Agent',
-        type: AgentType.developer,
-        description: 'Writes production-quality code and unit tests.',
-      ),
-      currentTask: 'Implementing Auth Module',
-      status: ExecutionStatus.running,
-      progress: 0.42,
-      activity: 'Generating Repository pattern for Firebase Auth.',
-    ),
-    _AgentStatusData(
-      agent: const Agent(
-        id: 'a6',
-        name: 'Build Agent',
-        type: AgentType.developer,
-        description: 'Manages CI/CD, builds, and deployments.',
-      ),
-      currentTask: 'Waiting for changes',
-      status: ExecutionStatus.waiting,
-      progress: 0.0,
-      activity: 'Pipeline ready for next commit.',
-    ),
-    _AgentStatusData(
-      agent: const Agent(
-        id: 'a7',
-        name: 'Testing Agent',
-        type: AgentType.tester,
-        description: 'Executes unit, integration, and UI tests.',
-      ),
-      currentTask: 'Planning Test Suite',
-      status: ExecutionStatus.planning,
-      progress: 0.15,
-      activity: 'Defining edge cases for login validation.',
-    ),
-    _AgentStatusData(
-      agent: const Agent(
-        id: 'a8',
-        name: 'Debug Agent',
-        type: AgentType.developer,
-        description: 'Identifies and fixes bugs in real-time.',
-      ),
-      currentTask: 'Idle',
-      status: ExecutionStatus.idle,
-      progress: 0.0,
-      activity: 'Monitoring system logs...',
-    ),
-  ];
+  List<_AgentStatusData> _getAgentData() {
+    return widget.viewModel.agents.map((agent) {
+      final isActive = widget.viewModel.activeExecution?.agentId == agent.id;
+      final execution = isActive ? widget.viewModel.activeExecution : null;
+
+      return _AgentStatusData(
+        agent: agent,
+        currentTask: execution != null ? 'Executing Task' : (isActive ? 'Initializing' : 'Idle'),
+        status: execution?.status ?? ExecutionStatus.idle,
+        progress: execution?.status == ExecutionStatus.completed ? 1.0 : (isActive ? 0.5 : 0.0),
+        activity: execution?.logs.last.message ?? 'Waiting for instructions...',
+      );
+    }).toList();
+  }
 
   @override
   Widget build(BuildContext context) {
+    final agents = _getAgentData();
+    
     return Scaffold(
       appBar: AppBar(
         title: const Text('Kindle Agents'),
@@ -126,7 +46,7 @@ class _AgentActivityScreenState extends State<AgentActivityScreen> {
           constraints: const BoxConstraints(maxWidth: kMaxContentWidth),
           child: ListView.builder(
             padding: const EdgeInsets.all(AppConstants.spacingMd),
-            itemCount: _agents.length + 1,
+            itemCount: agents.length + 1,
             itemBuilder: (context, index) {
               if (index == 0) {
                 return const SectionTitle(
@@ -134,7 +54,12 @@ class _AgentActivityScreenState extends State<AgentActivityScreen> {
                   subtitle: 'Real-time status of specialized AI agents.',
                 );
               }
-              return _AgentActivityCard(data: _agents[index - 1]);
+              return _AgentActivityCard(
+                data: agents[index - 1],
+                activeExecution: widget.viewModel.activeExecution?.agentId == agents[index - 1].agent.id
+                    ? widget.viewModel.activeExecution
+                    : null,
+              );
             },
           ),
         ),
@@ -161,8 +86,9 @@ class _AgentStatusData {
 
 class _AgentActivityCard extends StatelessWidget {
   final _AgentStatusData data;
+  final AgentExecution? activeExecution;
 
-  const _AgentActivityCard({required this.data});
+  const _AgentActivityCard({required this.data, this.activeExecution});
 
   @override
   Widget build(BuildContext context) {
@@ -173,7 +99,10 @@ class _AgentActivityCard extends StatelessWidget {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => AgentExecutionLogScreen(agent: data.agent),
+              builder: (context) => AgentExecutionLogScreen(
+                agent: data.agent,
+                execution: activeExecution,
+              ),
             ),
           );
         },

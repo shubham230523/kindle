@@ -9,8 +9,9 @@ import '../../../core/utils/responsive_layout.dart';
 
 class AgentExecutionLogScreen extends StatefulWidget {
   final Agent agent;
+  final AgentExecution? execution;
 
-  const AgentExecutionLogScreen({super.key, required this.agent});
+  const AgentExecutionLogScreen({super.key, required this.agent, this.execution});
 
   @override
   State<AgentExecutionLogScreen> createState() => _AgentExecutionLogScreenState();
@@ -18,12 +19,27 @@ class AgentExecutionLogScreen extends StatefulWidget {
 
 class _AgentExecutionLogScreenState extends State<AgentExecutionLogScreen> {
   final ScrollController _scrollController = ScrollController();
-  final List<ExecutionLog> _logs = [];
+  List<ExecutionLog> _logs = [];
 
   @override
   void initState() {
     super.initState();
-    _generateMockLogs();
+    if (widget.execution != null) {
+      _logs = widget.execution!.logs;
+    } else {
+      _generateMockLogs();
+    }
+  }
+
+  @override
+  void didUpdateWidget(AgentExecutionLogScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.execution != null && widget.execution != oldWidget.execution) {
+      setState(() {
+        _logs = widget.execution!.logs;
+      });
+      _scrollToBottom();
+    }
   }
 
   void _generateMockLogs() async {
