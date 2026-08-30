@@ -1,3 +1,4 @@
+import 'build_log_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../project/models/project.dart';
@@ -78,7 +79,17 @@ class _BuildDashboardScreenState extends State<BuildDashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _ActiveBuildCard(projectBuild: activeBuild),
+                  InkWell(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => BuildLogScreen(build: activeBuild),
+                        ),
+                      );
+                    },
+                    child: _ActiveBuildCard(projectBuild: activeBuild),
+                  ),
                   const SizedBox(height: AppConstants.spacingLg),
                   const SectionTitle(title: 'Build History'),
                   ..._builds.map((b) => _BuildHistoryItem(projectBuild: b)),
@@ -238,7 +249,14 @@ class _BuildHistoryItem extends StatelessWidget {
           title: Text('${projectBuild.platform} Build', style: const TextStyle(fontWeight: FontWeight.bold)),
           subtitle: Text('$timeStr • $durationStr'),
           trailing: const Icon(Icons.chevron_right, size: 16),
-          onTap: () {},
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => BuildLogScreen(build: projectBuild),
+              ),
+            );
+          },
         ),
       ),
     );
