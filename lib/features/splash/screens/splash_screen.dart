@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../../workspace/screens/chat_screen.dart';
+import '../../discovery/screens/discovery_chat_screen.dart';
 import '../../../core/utils/responsive_layout.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
@@ -23,7 +23,7 @@ class _SplashScreenState extends State<SplashScreen> {
     if (mounted) {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => const ChatScreen()),
+        MaterialPageRoute(builder: (context) => const DiscoveryChatScreen()),
       );
     }
   }
