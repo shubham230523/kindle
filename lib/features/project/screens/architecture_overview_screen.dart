@@ -3,6 +3,7 @@ import '../models/project.dart';
 import '../models/architecture.dart';
 import '../models/module.dart';
 import '../models/technology_dependency.dart';
+import 'widgets/architecture_diagram.dart';
 import '../../../shared/widgets/kindle_card.dart';
 import '../../../shared/widgets/section_title.dart';
 import '../../../core/theme/app_colors.dart';
@@ -81,6 +82,9 @@ class ArchitectureOverviewScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _PatternCard(pattern: architecture.pattern),
+                  const SizedBox(height: AppConstants.spacingLg),
+                  const SectionTitle(title: 'Visual Blueprint'),
+                  const ArchitectureDiagram(),
                   const SizedBox(height: AppConstants.spacingLg),
                   const SectionTitle(title: 'Structural Layers'),
                   _LayersList(layers: architecture.layers),
