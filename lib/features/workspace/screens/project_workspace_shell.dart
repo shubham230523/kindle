@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../project/models/project.dart';
 import 'project_dashboard_screen.dart';
+import 'agent_activity_screen.dart';
 import '../../project/screens/requirements_list_screen.dart';
 import '../../project/screens/architecture_overview_screen.dart';
 import '../../project/screens/development_plan_screen.dart';
@@ -40,6 +41,8 @@ class _ProjectWorkspaceShellState extends State<ProjectWorkspaceShell> {
         return ArchitectureOverviewScreen(project: widget.project);
       case 3:
         return DevelopmentPlanScreen(project: widget.project);
+      case 4:
+        return const AgentActivityScreen();
       default:
         return Center(
           child: Column(
