@@ -4,6 +4,7 @@ import 'project_edit_screen.dart';
 import 'platform_selection_screen.dart';
 import 'technology_selection_screen.dart';
 import 'backend_selection_screen.dart';
+import 'architecture_overview_screen.dart';
 import '../../../shared/widgets/kindle_card.dart';
 import '../../../shared/widgets/section_title.dart';
 import '../../../shared/widgets/kindle_button.dart';
@@ -519,9 +520,14 @@ class _ActionSection extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: KindleButton(
-              text: 'Create Project Workspace',
+              text: 'View Architecture Blueprint',
               onPressed: () {
-                // Final action
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ArchitectureOverviewScreen(project: project),
+                  ),
+                );
               },
             ),
           ),
