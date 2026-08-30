@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/project.dart';
+import 'project_edit_screen.dart';
 import '../../../shared/widgets/kindle_card.dart';
 import '../../../shared/widgets/section_title.dart';
 import '../../../shared/widgets/kindle_button.dart';
@@ -7,13 +8,41 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/responsive_layout.dart';
 
-class ProjectSummaryScreen extends StatelessWidget {
+class ProjectSummaryScreen extends StatefulWidget {
   final Project project;
 
   const ProjectSummaryScreen({
     super.key,
     required this.project,
   });
+
+  @override
+  State<ProjectSummaryScreen> createState() => _ProjectSummaryScreenState();
+}
+
+class _ProjectSummaryScreenState extends State<ProjectSummaryScreen> {
+  late Project _project;
+
+  @override
+  void initState() {
+    super.initState();
+    _project = widget.project;
+  }
+
+  void _handleEdit() async {
+    final updatedProject = await Navigator.push<Project>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ProjectEditScreen(project: _project),
+      ),
+    );
+
+    if (updatedProject != null) {
+      setState(() {
+        _project = updatedProject;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -23,9 +52,7 @@ class ProjectSummaryScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit_outlined),
-            onPressed: () {
-              // Edit logic
-            },
+            onPressed: _handleEdit,
             tooltip: 'Edit Project',
           ),
         ],
@@ -39,19 +66,17 @@ class ProjectSummaryScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _HeaderSection(project: project),
+                  _HeaderSection(project: _project),
                   const SizedBox(height: AppConstants.spacingLg),
-                  _OverviewSection(project: project),
+                  _OverviewSection(project: _project),
                   const SizedBox(height: AppConstants.spacingLg),
-                  _FeaturesSection(project: project),
+                  _FeaturesSection(project: _project),
                   const SizedBox(height: AppConstants.spacingLg),
                   _ActionSection(
                     onContinue: () {
                       // Navigate to tech selection or workspace
                     },
-                    onEdit: () {
-                      // Edit logic
-                    },
+                    onEdit: _handleEdit,
                   ),
                   const SizedBox(height: AppConstants.spacingXl),
                 ],
