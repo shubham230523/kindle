@@ -1,3 +1,5 @@
+import 'build_analysis.dart';
+
 enum BuildStatus { queued, running, successful, failed }
 
 class BuildArtifact {
@@ -41,6 +43,7 @@ class ProjectBuild {
   final DateTime? completedAt;
   final BuildArtifact? artifact;
   final String? errorMessage;
+  final BuildFailureAnalysis? failureAnalysis;
 
   const ProjectBuild({
     required this.id,
@@ -51,6 +54,7 @@ class ProjectBuild {
     this.completedAt,
     this.artifact,
     this.errorMessage,
+    this.failureAnalysis,
   });
 
   Duration? get duration {
@@ -64,6 +68,7 @@ class ProjectBuild {
     DateTime? completedAt,
     BuildArtifact? artifact,
     String? errorMessage,
+    BuildFailureAnalysis? failureAnalysis,
   }) {
     return ProjectBuild(
       id: id,
@@ -74,6 +79,7 @@ class ProjectBuild {
       completedAt: completedAt ?? this.completedAt,
       artifact: artifact ?? this.artifact,
       errorMessage: errorMessage ?? this.errorMessage,
+      failureAnalysis: failureAnalysis ?? this.failureAnalysis,
     );
   }
 
@@ -87,6 +93,7 @@ class ProjectBuild {
       'completedAt': completedAt?.toIso8601String(),
       'artifact': artifact?.toMap(),
       'errorMessage': errorMessage,
+      'failureAnalysis': failureAnalysis?.toMap(),
     };
   }
 
@@ -103,6 +110,7 @@ class ProjectBuild {
       completedAt: DateTime.tryParse(map['completedAt'] ?? ''),
       artifact: map['artifact'] != null ? BuildArtifact.fromMap(map['artifact']) : null,
       errorMessage: map['errorMessage'],
+      failureAnalysis: map['failureAnalysis'] != null ? BuildFailureAnalysis.fromMap(map['failureAnalysis']) : null,
     );
   }
 }

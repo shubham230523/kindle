@@ -1,8 +1,10 @@
 import 'build_log_screen.dart';
+import 'widgets/build_analysis_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../project/models/project.dart';
 import '../../project/models/build.dart';
+import '../../project/models/build_analysis.dart';
 import '../../../shared/widgets/kindle_card.dart';
 import '../../../shared/widgets/section_title.dart';
 import '../../../shared/widgets/kindle_button.dart';
@@ -48,6 +50,13 @@ class _BuildDashboardScreenState extends State<BuildDashboardScreen> {
         startedAt: now.subtract(const Duration(hours: 3)),
         completedAt: now.subtract(const Duration(hours: 2, minutes: 55)),
         errorMessage: 'Code signing error: Certificate expired.',
+        failureAnalysis: const BuildFailureAnalysis(
+          errorSummary: 'Automatic code signing failed for iOS.',
+          likelyCause: 'The development certificate used for this build has expired or is no longer valid in the keychain.',
+          affectedFiles: ['ios/Runner.xcodeproj', 'ios/Podfile'],
+          suggestedSolution: 'Renew the development certificate in the Apple Developer portal and re-sync the project configuration.',
+          confidence: 0.98,
+        ),
       ),
       ProjectBuild(
         id: 'b3',
@@ -90,6 +99,14 @@ class _BuildDashboardScreenState extends State<BuildDashboardScreen> {
                     },
                     child: _ActiveBuildCard(projectBuild: activeBuild),
                   ),
+                  if (activeBuild.status == BuildStatus.failed && activeBuild.failureAnalysis != null) ...[
+                    const SizedBox(height: AppConstants.spacingLg),
+                    BuildAnalysisWidget(
+                      analysis: activeBuild.failureAnalysis!,
+                      onRetry: () {},
+                      onFix: () {},
+                    ),
+                  ],
                   const SizedBox(height: AppConstants.spacingLg),
                   const SectionTitle(title: 'Build History'),
                   ..._builds.map((b) => _BuildHistoryItem(projectBuild: b)),
