@@ -12,7 +12,8 @@ export class CodingAgent {
     3. Respect existing files and ensure new code integrates seamlessly.
     4. Provide clear explanations for your changes.
     5. Ensure all file paths are relative to the project "src" root.
-    6. Do NOT include extraneous text outside of the required JSON format.
+    6. If a "DEBUG CONTEXT" is provided, you must fix the reported issue while still respecting the original task and architecture.
+    7. Do NOT include extraneous text outside of the required JSON format.
 
     OUTPUT FORMAT:
     You must output your response as a valid JSON object with the following structure:
@@ -30,7 +31,7 @@ export class CodingAgent {
   `;
 
   async executeTask(request: CodingRequest): Promise<CodingResult> {
-    const userInput = `
+    let userInput = `
       ARCHITECTURE PATTERN: ${request.architecture.pattern}
       LAYERS: ${request.architecture.layers.join(', ')}
       TASK: ${request.task.title}
@@ -39,6 +40,16 @@ export class CodingAgent {
       ACCEPTANCE CRITERIA: ${request.task.acceptanceCriteria.join(' | ')}
       EXISTING FILES: ${request.existingFiles.join(', ')}
     `;
+
+    if (request.debugContext) {
+      userInput += `
+
+      DEBUG CONTEXT:
+      ROOT CAUSE: ${request.debugContext.rootCause}
+      ERROR OUTPUT: ${request.debugContext.errorOutput}
+      SUGGESTED FIX: ${request.debugContext.suggestedFix}
+      `;
+    }
 
     const messages: AiChatMessage[] = [
       { role: 'system', content: this.systemPrompt },

@@ -26,4 +26,9 @@ export interface CodingRequest {
     acceptanceCriteria: string[];
   };
   existingFiles: string[];
+  debugContext?: {
+    rootCause: string;
+    errorOutput: string;
+    suggestedFix: string;
+  };
 }
