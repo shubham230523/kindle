@@ -1,13 +1,10 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.aiService = exports.AiService = void 0;
-const ai_js_1 = require("../../models/ai.js");
-const ollama_provider_js_1 = require("./ollama.provider.js");
-class AiService {
+import { AiError } from '../../models/ai.js';
+import { OllamaProvider } from './ollama.provider.js';
+export class AiService {
     providers = new Map();
     defaultProvider = 'ollama';
     constructor() {
-        this.registerProvider(new ollama_provider_js_1.OllamaProvider());
+        this.registerProvider(new OllamaProvider());
     }
     registerProvider(provider) {
         this.providers.set(provider.name, provider);
@@ -16,17 +13,16 @@ class AiService {
         const name = providerName || this.defaultProvider;
         const provider = this.providers.get(name);
         if (!provider) {
-            throw new ai_js_1.AiError(`AI Provider "${name}" not found`, 404);
+            throw new AiError(`AI Provider "${name}" not found`, 404);
         }
         return provider.chat(request);
     }
     setDefaultProvider(name) {
         if (!this.providers.has(name)) {
-            throw new ai_js_1.AiError(`AI Provider "${name}" not found`, 404);
+            throw new AiError(`AI Provider "${name}" not found`, 404);
         }
         this.defaultProvider = name;
     }
 }
-exports.AiService = AiService;
 // Export a singleton instance
-exports.aiService = new AiService();
+export const aiService = new AiService();

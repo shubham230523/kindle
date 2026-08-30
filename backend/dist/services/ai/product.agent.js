@@ -1,9 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.productAgent = exports.ProductAgent = void 0;
-const ai_service_js_1 = require("./ai.service.js");
-const ai_js_1 = require("../../models/ai.js");
-class ProductAgent {
+import { aiService } from './ai.service.js';
+import { AiError } from '../../models/ai.js';
+export class ProductAgent {
     systemPrompt = `
     You are the Kindle Product Agent. Your goal is to take a structured discovery output and transform it into a professional product specification.
 
@@ -46,7 +43,7 @@ class ProductAgent {
             { role: 'user', content: userInput }
         ];
         try {
-            const response = await ai_service_js_1.aiService.chat({
+            const response = await aiService.chat({
                 messages,
                 temperature: 0.3
             });
@@ -63,9 +60,8 @@ class ProductAgent {
             }
         }
         catch (error) {
-            throw new ai_js_1.AiError(`Product Agent Error: ${error.message}`, 500, 'product-agent');
+            throw new AiError(`Product Agent Error: ${error.message}`, 500, 'product-agent');
         }
     }
 }
-exports.ProductAgent = ProductAgent;
-exports.productAgent = new ProductAgent();
+export const productAgent = new ProductAgent();

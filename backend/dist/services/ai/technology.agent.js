@@ -1,9 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.technologyAgent = exports.TechnologyAgent = void 0;
-const ai_service_js_1 = require("./ai.service.js");
-const ai_js_1 = require("../../models/ai.js");
-class TechnologyAgent {
+import { aiService } from './ai.service.js';
+import { AiError } from '../../models/ai.js';
+export class TechnologyAgent {
     systemPrompt = `
     You are the Kindle Technology Agent. Your goal is to recommend the most suitable technology stack for a given application based on its requirements and target platforms.
 
@@ -40,7 +37,7 @@ class TechnologyAgent {
             { role: 'user', content: userInput }
         ];
         try {
-            const response = await ai_service_js_1.aiService.chat({
+            const response = await aiService.chat({
                 messages,
                 temperature: 0.2
             });
@@ -57,9 +54,8 @@ class TechnologyAgent {
             }
         }
         catch (error) {
-            throw new ai_js_1.AiError(`Technology Agent Error: ${error.message}`, 500, 'technology-agent');
+            throw new AiError(`Technology Agent Error: ${error.message}`, 500, 'technology-agent');
         }
     }
 }
-exports.TechnologyAgent = TechnologyAgent;
-exports.technologyAgent = new TechnologyAgent();
+export const technologyAgent = new TechnologyAgent();

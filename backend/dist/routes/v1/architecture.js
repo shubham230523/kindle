@@ -1,8 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = architectureRoutes;
-const architecture_agent_js_1 = require("../../services/ai/architecture.agent.js");
-async function architectureRoutes(fastify) {
+import { architectureAgent } from '../../services/ai/architecture.agent.js';
+export default async function architectureRoutes(fastify) {
     fastify.post('/architecture/generate', async (request, reply) => {
         const archRequest = request.body;
         if (!archRequest.technology || !archRequest.requirements) {
@@ -12,7 +9,7 @@ async function architectureRoutes(fastify) {
             });
         }
         try {
-            const result = await architecture_agent_js_1.architectureAgent.generateBlueprint(archRequest);
+            const result = await architectureAgent.generateBlueprint(archRequest);
             return result;
         }
         catch (error) {

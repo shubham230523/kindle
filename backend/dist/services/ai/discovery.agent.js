@@ -1,9 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.discoveryAgent = exports.DiscoveryAgent = void 0;
-const ai_service_js_1 = require("./ai.service.js");
-const ai_js_1 = require("../../models/ai.js");
-class DiscoveryAgent {
+import { aiService } from './ai.service.js';
+import { AiError } from '../../models/ai.js';
+export class DiscoveryAgent {
     systemPrompt = `
     You are the Kindle Discovery Agent. Your goal is to understand a user's application idea and help them refine it into a structured set of requirements.
 
@@ -39,7 +36,7 @@ class DiscoveryAgent {
             { role: 'user', content: idea }
         ];
         try {
-            const response = await ai_service_js_1.aiService.chat({
+            const response = await aiService.chat({
                 messages,
                 temperature: 0.2 // Lower temperature for more deterministic structured output
             });
@@ -58,9 +55,8 @@ class DiscoveryAgent {
             }
         }
         catch (error) {
-            throw new ai_js_1.AiError(`Discovery Agent Error: ${error.message}`, 500, 'discovery-agent');
+            throw new AiError(`Discovery Agent Error: ${error.message}`, 500, 'discovery-agent');
         }
     }
 }
-exports.DiscoveryAgent = DiscoveryAgent;
-exports.discoveryAgent = new DiscoveryAgent();
+export const discoveryAgent = new DiscoveryAgent();

@@ -1,8 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = planRoutes;
-const planning_agent_js_1 = require("../../services/ai/planning.agent.js");
-async function planRoutes(fastify) {
+import { planningAgent } from '../../services/ai/planning.agent.js';
+export default async function planRoutes(fastify) {
     fastify.post('/plan/generate', async (request, reply) => {
         const planningRequest = request.body;
         if (!planningRequest.product || !planningRequest.architecture) {
@@ -12,7 +9,7 @@ async function planRoutes(fastify) {
             });
         }
         try {
-            const result = await planning_agent_js_1.planningAgent.generatePlan(planningRequest);
+            const result = await planningAgent.generatePlan(planningRequest);
             return result;
         }
         catch (error) {

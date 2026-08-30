@@ -1,9 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.architectureAgent = exports.ArchitectureAgent = void 0;
-const ai_service_js_1 = require("./ai.service.js");
-const ai_js_1 = require("../../models/ai.js");
-class ArchitectureAgent {
+import { aiService } from './ai.service.js';
+import { AiError } from '../../models/ai.js';
+export class ArchitectureAgent {
     systemPrompt = `
     You are the Kindle Architecture Agent. Your goal is to design a robust, scalable, and technology-specific architecture for an application.
 
@@ -42,7 +39,7 @@ class ArchitectureAgent {
             { role: 'user', content: userInput }
         ];
         try {
-            const response = await ai_service_js_1.aiService.chat({
+            const response = await aiService.chat({
                 messages,
                 temperature: 0.2
             });
@@ -59,9 +56,8 @@ class ArchitectureAgent {
             }
         }
         catch (error) {
-            throw new ai_js_1.AiError(`Architecture Agent Error: ${error.message}`, 500, 'architecture-agent');
+            throw new AiError(`Architecture Agent Error: ${error.message}`, 500, 'architecture-agent');
         }
     }
 }
-exports.ArchitectureAgent = ArchitectureAgent;
-exports.architectureAgent = new ArchitectureAgent();
+export const architectureAgent = new ArchitectureAgent();

@@ -1,9 +1,6 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.planningAgent = exports.PlanningAgent = void 0;
-const ai_service_js_1 = require("./ai.service.js");
-const ai_js_1 = require("../../models/ai.js");
-class PlanningAgent {
+import { aiService } from './ai.service.js';
+import { AiError } from '../../models/ai.js';
+export class PlanningAgent {
     systemPrompt = `
     You are the Kindle Planning Agent. Your goal is to create a detailed, dependency-aware development plan for an application.
 
@@ -53,7 +50,7 @@ class PlanningAgent {
             { role: 'user', content: userInput }
         ];
         try {
-            const response = await ai_service_js_1.aiService.chat({
+            const response = await aiService.chat({
                 messages,
                 temperature: 0.2
             });
@@ -70,9 +67,8 @@ class PlanningAgent {
             }
         }
         catch (error) {
-            throw new ai_js_1.AiError(`Planning Agent Error: ${error.message}`, 500, 'planning-agent');
+            throw new AiError(`Planning Agent Error: ${error.message}`, 500, 'planning-agent');
         }
     }
 }
-exports.PlanningAgent = PlanningAgent;
-exports.planningAgent = new PlanningAgent();
+export const planningAgent = new PlanningAgent();

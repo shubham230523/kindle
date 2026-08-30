@@ -1,8 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = aiRoutes;
-const ai_service_js_1 = require("../../services/ai/ai.service.js");
-async function aiRoutes(fastify) {
+import { aiService } from '../../services/ai/ai.service.js';
+export default async function aiRoutes(fastify) {
     fastify.post('/ai/chat', async (request, reply) => {
         const chatRequest = request.body;
         if (!chatRequest.messages || !Array.isArray(chatRequest.messages)) {
@@ -12,7 +9,7 @@ async function aiRoutes(fastify) {
             });
         }
         try {
-            const response = await ai_service_js_1.aiService.chat(chatRequest);
+            const response = await aiService.chat(chatRequest);
             return response;
         }
         catch (error) {

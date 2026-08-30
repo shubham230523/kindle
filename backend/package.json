@@ -1,6 +1,7 @@
 {
   "name": "kindle-backend",
   "version": "1.0.0",
+  "type": "module",
   "description": "Node.js backend for Kindle",
   "main": "dist/server.js",
   "scripts": {

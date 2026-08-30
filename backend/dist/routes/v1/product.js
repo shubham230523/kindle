@@ -1,8 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = productRoutes;
-const product_agent_js_1 = require("../../services/ai/product.agent.js");
-async function productRoutes(fastify) {
+import { productAgent } from '../../services/ai/product.agent.js';
+export default async function productRoutes(fastify) {
     fastify.post('/product/generate', async (request, reply) => {
         const productRequest = request.body;
         if (!productRequest.discoveryResult) {
@@ -12,7 +9,7 @@ async function productRoutes(fastify) {
             });
         }
         try {
-            const result = await product_agent_js_1.productAgent.generateProductSummary(productRequest);
+            const result = await productAgent.generateProductSummary(productRequest);
             return result;
         }
         catch (error) {

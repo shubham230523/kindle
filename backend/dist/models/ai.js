@@ -1,7 +1,4 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.AiError = void 0;
-class AiError extends Error {
+export class AiError extends Error {
     statusCode;
     provider;
     constructor(message, statusCode = 500, provider = 'unknown') {
@@ -11,4 +8,3 @@ class AiError extends Error {
         this.name = 'AiError';
     }
 }
-exports.AiError = AiError;

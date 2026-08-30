@@ -1,8 +1,5 @@
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.default = technologyRoutes;
-const technology_agent_js_1 = require("../../services/ai/technology.agent.js");
-async function technologyRoutes(fastify) {
+import { technologyAgent } from '../../services/ai/technology.agent.js';
+export default async function technologyRoutes(fastify) {
     fastify.post('/technology/recommend', async (request, reply) => {
         const techRequest = request.body;
         if (!techRequest.requirements || !techRequest.platforms) {
@@ -12,7 +9,7 @@ async function technologyRoutes(fastify) {
             });
         }
         try {
-            const result = await technology_agent_js_1.technologyAgent.recommendStack(techRequest);
+            const result = await technologyAgent.recommendStack(techRequest);
             return result;
         }
         catch (error) {
