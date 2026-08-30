@@ -1,6 +1,7 @@
 import 'requirement.dart';
 import 'feature.dart';
 import 'screen_definition.dart';
+import 'architecture.dart';
 
 enum ProjectStatus { draft, inProgress, completed, archived }
 
@@ -19,6 +20,7 @@ class Project {
   final String? selectedTechnology;
   final String? selectedBackend;
   final String? selectedDatabase;
+  final Architecture? architecture;
 
   const Project({
     required this.id,
@@ -35,6 +37,7 @@ class Project {
     this.selectedTechnology,
     this.selectedBackend,
     this.selectedDatabase,
+    this.architecture,
   });
 
   Project copyWith({
@@ -52,6 +55,7 @@ class Project {
     String? selectedTechnology,
     String? selectedBackend,
     String? selectedDatabase,
+    Architecture? architecture,
   }) {
     return Project(
       id: id ?? this.id,
@@ -68,6 +72,7 @@ class Project {
       selectedTechnology: selectedTechnology ?? this.selectedTechnology,
       selectedBackend: selectedBackend ?? this.selectedBackend,
       selectedDatabase: selectedDatabase ?? this.selectedDatabase,
+      architecture: architecture ?? this.architecture,
     );
   }
 
@@ -87,6 +92,7 @@ class Project {
       'selectedTechnology': selectedTechnology,
       'selectedBackend': selectedBackend,
       'selectedDatabase': selectedDatabase,
+      'architecture': architecture?.toMap(),
     };
   }
 
@@ -115,6 +121,7 @@ class Project {
       selectedTechnology: map['selectedTechnology'],
       selectedBackend: map['selectedBackend'],
       selectedDatabase: map['selectedDatabase'],
+      architecture: map['architecture'] != null ? Architecture.fromMap(map['architecture']) : null,
     );
   }
 }
