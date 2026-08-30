@@ -10,6 +10,8 @@ class TestCase {
   final Duration? duration;
   final String? errorMessage;
   final String? stackTrace;
+  final List<String> logs;
+  final List<String> relatedFiles;
 
   const TestCase({
     required this.id,
@@ -19,6 +21,8 @@ class TestCase {
     this.duration,
     this.errorMessage,
     this.stackTrace,
+    this.logs = const [],
+    this.relatedFiles = const [],
   });
 
   Map<String, dynamic> toMap() {
@@ -30,6 +34,8 @@ class TestCase {
       'duration': duration?.inMilliseconds,
       'errorMessage': errorMessage,
       'stackTrace': stackTrace,
+      'logs': logs,
+      'relatedFiles': relatedFiles,
     };
   }
 
@@ -45,6 +51,8 @@ class TestCase {
       duration: map['duration'] != null ? Duration(milliseconds: map['duration']) : null,
       errorMessage: map['errorMessage'],
       stackTrace: map['stackTrace'],
+      logs: List<String>.from(map['logs'] ?? []),
+      relatedFiles: List<String>.from(map['relatedFiles'] ?? []),
     );
   }
 }

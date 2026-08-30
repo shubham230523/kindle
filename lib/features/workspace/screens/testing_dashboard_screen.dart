@@ -1,3 +1,4 @@
+import 'test_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../project/models/project.dart';
@@ -41,6 +42,17 @@ class _TestingDashboardScreenState extends State<TestingDashboardScreen> {
         failedCount: 0,
         skippedCount: 0,
         coverage: 0.88,
+        testCases: [
+          TestCase(
+            id: 'tc1',
+            name: 'Theme initialization',
+            suite: 'core/theme_test.dart',
+            status: TestStatus.passed,
+            duration: const Duration(milliseconds: 120),
+            logs: ['Checking light theme...', 'Checking dark theme...', 'Pass.'],
+            relatedFiles: ['lib/core/theme/app_theme.dart'],
+          ),
+        ],
       ),
       TestRun(
         id: 'tr2',
@@ -53,6 +65,19 @@ class _TestingDashboardScreenState extends State<TestingDashboardScreen> {
         failedCount: 2,
         skippedCount: 0,
         coverage: 0.75,
+        testCases: [
+          TestCase(
+            id: 'tc2',
+            name: 'Login button interaction',
+            suite: 'features/auth/login_screen_test.dart',
+            status: TestStatus.failed,
+            duration: const Duration(milliseconds: 450),
+            errorMessage: 'Expected: clickable, Actual: disabled',
+            stackTrace: 'Error at login_screen_test.dart:42\nTest failed after 450ms',
+            logs: ['Pumping LoginScreen...', 'Finding login button...', 'Tapping button...', 'Failed.'],
+            relatedFiles: ['lib/features/auth/screens/login_screen.dart'],
+          ),
+        ],
       ),
       TestRun(
         id: 'tr3',
@@ -198,6 +223,20 @@ class _TestRunCard extends StatelessWidget {
               padding: const EdgeInsets.all(16.0),
               child: Column(
                 children: [
+                  ...run.testCases.map((tc) => ListTile(
+                    dense: true,
+                    leading: _StatusIcon(status: tc.status),
+                    title: Text(tc.name),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => TestDetailScreen(testCase: tc),
+                        ),
+                      );
+                    },
+                  )),
+                  const Divider(),
                   _buildDetailRow('Passed', '${run.passedCount}', Colors.green),
                   _buildDetailRow('Failed', '${run.failedCount}', Colors.red),
                   _buildDetailRow('Skipped', '${run.skippedCount}', Colors.grey),
