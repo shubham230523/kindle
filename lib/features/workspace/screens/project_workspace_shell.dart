@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../project/models/project.dart';
 import '../../project/screens/project_summary_screen.dart';
+import '../../project/screens/requirements_list_screen.dart';
 import '../../project/screens/architecture_overview_screen.dart';
 import '../../project/screens/development_plan_screen.dart';
 import '../../../core/utils/responsive_layout.dart';
@@ -33,6 +34,8 @@ class _ProjectWorkspaceShellState extends State<ProjectWorkspaceShell> {
     switch (_selectedIndex) {
       case 0:
         return ProjectSummaryScreen(project: widget.project);
+      case 1:
+        return RequirementsListScreen(project: widget.project);
       case 2:
         return ArchitectureOverviewScreen(project: widget.project);
       case 3:
