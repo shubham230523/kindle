@@ -1,4 +1,5 @@
 import { aiService } from './ai.service.js';
+import { extractJson } from './ai-utils.js';
 import { AiError } from '../../models/ai.js';
 export class CodingAgent {
     systemPrompt = `
@@ -56,7 +57,7 @@ export class CodingAgent {
                 temperature: 0.1
             });
             try {
-                const result = JSON.parse(response.content);
+                const result = extractJson(response.content);
                 result.changes.forEach(change => {
                     if (change.path.startsWith('/') || change.path.includes('..')) {
                         throw new Error(`Security Error: Invalid file path detected: ${change.path}`);
@@ -65,16 +66,13 @@ export class CodingAgent {
                 return result;
             }
             catch (parseError) {
-                const jsonMatch = response.content.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    const result = JSON.parse(jsonMatch[0]);
-                    return result;
-                }
-                throw new Error(`AI failed to provide structured coding output: ${parseError.message}`);
+                throw new Error(`Invalid AI Output: ${parseError.message}`);
             }
         }
         catch (error) {
-            throw new AiError(`Coding Agent Error: ${error.message}`, 500, 'coding-agent');
+            if (error instanceof AiError)
+                throw error;
+            throw new AiError(`Coding Agent Failure: ${error.message}`, 500, 'coding-agent', 'INVALID_AI_OUTPUT');
         }
     }
 }

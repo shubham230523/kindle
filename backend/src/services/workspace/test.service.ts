@@ -1,5 +1,6 @@
 import { spawn } from 'child_process';
 import { workspaceService } from './workspace.service.js';
+import { socketService } from './socket.service.js';
 import { TestStatus, TestRunResult, TestCategory } from '../../models/test.js';
 
 export class TestService {
@@ -31,6 +32,17 @@ export class TestService {
         output += data.toString();
       });
 
+      child.on('error', (err) => {
+        clearTimeout(timeout);
+        resolve(this.createFailedResult(
+          testRunId,
+          projectId,
+          category,
+          startedAt,
+          output + `\n[CRITICAL ERROR] Failed to start test process: ${err.message}. Ensure the testing framework is installed.`
+        ));
+      });
+
       child.on('close', (code) => {
         clearTimeout(timeout);
         const completedAt = new Date().toISOString();
@@ -39,7 +51,7 @@ export class TestService {
         // In a real implementation, we would parse JSON or XML test reports
         const passed = !output.toLowerCase().includes('failed') && code === 0;
 
-        resolve({
+        const result: TestRunResult = {
           id: testRunId,
           projectId,
           category,
@@ -52,7 +64,10 @@ export class TestService {
           skippedCount: 0,
           output,
           testCases: [], // Would be populated from real output
-        });
+        };
+
+        socketService.emit(projectId, 'TEST_COMPLETED', result);
+        resolve(result);
       });
     });
   }

@@ -1,4 +1,5 @@
 import { aiService } from './ai.service.js';
+import { extractJson } from './ai-utils.js';
 import { AiChatMessage, AiError } from '../../models/ai.js';
 import { CodingResult, CodingRequest } from '../../models/coding.js';
 
@@ -63,7 +64,7 @@ export class CodingAgent {
       });
 
       try {
-        const result = JSON.parse(response.content) as CodingResult;
+        const result = extractJson<CodingResult>(response.content);
 
         result.changes.forEach(change => {
           if (change.path.startsWith('/') || change.path.includes('..')) {
@@ -73,15 +74,11 @@ export class CodingAgent {
 
         return result;
       } catch (parseError: any) {
-        const jsonMatch = response.content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const result = JSON.parse(jsonMatch[0]) as CodingResult;
-          return result;
-        }
-        throw new Error(`AI failed to provide structured coding output: ${parseError.message}`);
+        throw new Error(`Invalid AI Output: ${parseError.message}`);
       }
     } catch (error: any) {
-      throw new AiError(`Coding Agent Error: ${error.message}`, 500, 'coding-agent');
+      if (error instanceof AiError) throw error;
+      throw new AiError(`Coding Agent Failure: ${error.message}`, 500, 'coding-agent', 'INVALID_AI_OUTPUT');
     }
   }
 }

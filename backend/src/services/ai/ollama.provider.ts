@@ -40,10 +40,17 @@ export class OllamaProvider implements AiProvider {
       };
     } catch (error: any) {
       if (axios.isAxiosError(error)) {
+        if (error.code === 'ECONNABORTED') {
+          throw new AiError('Ollama API Timeout: The AI provider took too long to respond.', 408, this.name, 'AI_TIMEOUT');
+        }
+        if (error.code === 'ECONNREFUSED') {
+          throw new AiError('Ollama API Connection Refused: Ensure the AI provider is running.', 503, this.name, 'AI_NETWORK_FAILURE');
+        }
         throw new AiError(
           `Ollama API Error: ${error.response?.data?.error || error.message}`,
           error.response?.status || 500,
-          this.name
+          this.name,
+          'AI_PROVIDER_ERROR'
         );
       }
       throw new AiError(error.message, 500, this.name);

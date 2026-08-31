@@ -5,9 +5,11 @@ import { debugAgent } from '../ai/debug.agent.js';
 import { codeChangeService } from './code-change.service.js';
 import { executionService } from './execution.service.js';
 import { workspaceService } from './workspace.service.js';
+import { socketService } from './socket.service.js';
 import { AgentExecution, ExecutionStatus } from '../../models/execution.js';
 import { BuildStatus } from '../../models/build.js';
 import { TestStatus } from '../../models/test.js';
+import { AiError } from '../../models/ai.js';
 
 export class DevelopmentOrchestrator {
   private readonly MAX_RETRIES = 3;
@@ -18,11 +20,13 @@ export class DevelopmentOrchestrator {
       id: executionId,
       projectId,
       taskId: task.id,
-      agentId: 'kindle-orchestrator-v1',
+      agentId: 'kindle-orchestrator-v2',
       status: ExecutionStatus.planning,
       startedAt: new Date().toISOString(),
       logs: [executionService.createLog(`Initiating autonomous execution for: ${task.title}`)],
     };
+
+    socketService.emit(projectId, 'AGENT_STARTED', { taskId: task.id, title: task.title });
 
     let retryCount = 0;
     let isVerified = false;
@@ -32,78 +36,111 @@ export class DevelopmentOrchestrator {
       await executionService.recordExecution(execution);
 
       while (retryCount <= this.MAX_RETRIES && !isVerified) {
-        if (retryCount > 0) {
-          execution.logs.push(executionService.createLog(`Self-healing attempt #${retryCount} started...`));
+        try {
+          if (retryCount > 0) {
+            const healMsg = `Self-healing attempt #${retryCount} started...`;
+            execution.logs.push(executionService.createLog(healMsg));
+            socketService.emit(projectId, 'AGENT_PROGRESS', { message: healMsg });
+            await executionService.recordExecution(execution);
+          }
+
+          // 1. Get Context
+          const existingFiles = await workspaceService.listProjectFiles(projectId);
+
+          // 2. Generate Code
+          execution.status = ExecutionStatus.running;
+          const progressMsg = debugContext ? 'Generating targeted fix...' : 'Generating implementation...';
+          execution.logs.push(executionService.createLog(progressMsg));
+          socketService.emit(projectId, 'AGENT_PROGRESS', { status: execution.status, message: progressMsg });
           await executionService.recordExecution(execution);
-        }
 
-        // 1. Get Context
-        const existingFiles = await workspaceService.listProjectFiles(projectId);
+          const codingResult = await codingAgent.executeTask({
+            projectId,
+            architecture,
+            task,
+            existingFiles,
+            debugContext,
+          });
 
-        // 2. Generate Code
-        execution.status = ExecutionStatus.running;
-        execution.logs.push(executionService.createLog(
-          debugContext ? 'Generating targeted fix...' : 'Generating implementation...'
-        ));
-        await executionService.recordExecution(execution);
+          // 3. Apply Changes
+          const applyMsg = 'Applying file modifications...';
+          execution.logs.push(executionService.createLog(applyMsg, codingResult.explanation));
+          socketService.emit(projectId, 'AGENT_PROGRESS', { message: applyMsg });
 
-        const codingResult = await codingAgent.executeTask({
-          projectId,
-          architecture,
-          task,
-          existingFiles,
-          debugContext,
-        });
+          const checkpointId = await codeChangeService.applyChanges(
+            projectId,
+            codingResult.changes,
+            `Retry ${retryCount}: ${codingResult.explanation}`
+          );
+          execution.checkpointId = checkpointId;
+          await executionService.recordExecution(execution);
 
-        // 3. Apply Changes
-        execution.logs.push(executionService.createLog('Applying file modifications...', codingResult.explanation));
-        const checkpointId = await codeChangeService.applyChanges(
-          projectId,
-          codingResult.changes,
-          `Retry ${retryCount}: ${codingResult.explanation}`
-        );
-        execution.checkpointId = checkpointId;
-        await executionService.recordExecution(execution);
+          // 4. Verify Build
+          const buildMsg = 'Verifying build integrity...';
+          execution.logs.push(executionService.createLog(buildMsg));
+          socketService.emit(projectId, 'AGENT_PROGRESS', { message: buildMsg });
 
-        // 4. Verify Build
-        execution.logs.push(executionService.createLog('Verifying build integrity...'));
-        const buildResult = await buildAgent.buildProject(projectId, architecture.technology || 'flutter');
+          const buildResult = await buildAgent.buildProject(projectId, architecture.technology || 'flutter');
 
-        if (buildResult.status !== BuildStatus.successful) {
-          execution.logs.push(executionService.createLog('Build failed. Analyzing logs...', buildResult.output));
-          debugContext = await this._getDebugContext(projectId, buildResult.output, task);
+          if (buildResult.status !== BuildStatus.successful) {
+            if (buildResult.output.includes('timed out')) {
+              throw new Error('BUILD_TIMEOUT: The build process exceeded the time limit.');
+            }
+            execution.logs.push(executionService.createLog('Build failed. Analyzing logs...', buildResult.output));
+            debugContext = await this._getDebugContext(projectId, buildResult.output, task);
+            retryCount++;
+            continue;
+          }
+
+          // 5. Verify Behavior (Tests)
+          const testMsg = 'Build stable. Running test suite...';
+          execution.logs.push(executionService.createLog(testMsg));
+          socketService.emit(projectId, 'AGENT_PROGRESS', { message: testMsg });
+
+          const testResults = await testingAgent.executeTestStrategy(projectId, architecture.technology || 'flutter');
+          const allPassed = testResults.every(r => r.status === TestStatus.passed);
+
+          if (!allPassed) {
+            const failedOutput = testResults.filter(r => r.status === TestStatus.failed).map(t => t.output).join('\n');
+            execution.logs.push(executionService.createLog('Test failures detected. Analyzing...', failedOutput));
+            debugContext = await this._getDebugContext(projectId, failedOutput, task);
+            retryCount++;
+            continue;
+          }
+
+          // Success!
+          isVerified = true;
+
+        } catch (stepError: any) {
+          // Handle specific failures within the loop
+          const errorType = this._categorizeError(stepError);
+          const errorMsg = `Critical Step Failure [${errorType}]: ${stepError.message}`;
+
+          execution.logs.push(executionService.createLog(errorMsg));
+          socketService.emit(projectId, 'TASK_FAILED', { type: errorType, message: stepError.message });
+
+          if (this._isFatal(errorType)) throw stepError; // Stop the loop for fatal errors
+
           retryCount++;
-          continue;
+          if (retryCount > this.MAX_RETRIES) throw stepError;
         }
-
-        // 5. Verify Behavior (Tests)
-        execution.logs.push(executionService.createLog('Build stable. Running test suite...'));
-        const testResults = await testingAgent.executeTestStrategy(projectId, architecture.technology || 'flutter');
-        const allPassed = testResults.every(r => r.status === TestStatus.passed);
-
-        if (!allPassed) {
-          const failedOutput = testResults.filter(r => r.status === TestStatus.failed).map(t => t.output).join('\n');
-          execution.logs.push(executionService.createLog('Test failures detected. Analyzing...', failedOutput));
-          debugContext = await this._getDebugContext(projectId, failedOutput, task);
-          retryCount++;
-          continue;
-        }
-
-        // Success!
-        isVerified = true;
       }
 
       if (isVerified) {
         execution.status = ExecutionStatus.completed;
-        execution.logs.push(executionService.createLog('Autonomous verification successful. Task finalized.'));
+        const finalMsg = 'Autonomous verification successful. Task finalized.';
+        execution.logs.push(executionService.createLog(finalMsg));
+        socketService.emit(projectId, 'AGENT_PROGRESS', { status: execution.status, message: finalMsg });
       } else {
         execution.status = ExecutionStatus.failed;
         execution.logs.push(executionService.createLog('Maximum self-healing retries reached. Human intervention required.'));
       }
 
-    } catch (error: any) {
+    } catch (criticalError: any) {
       execution.status = ExecutionStatus.failed;
-      execution.logs.push(executionService.createLog('Orchestration critical failure', error.message));
+      const failMsg = `Orchestration Critical Failure: ${criticalError.message}`;
+      execution.logs.push(executionService.createLog(failMsg));
+      socketService.emit(projectId, 'SYSTEM_ERROR', { message: failMsg });
     }
 
     execution.completedAt = new Date().toISOString();
@@ -111,13 +148,34 @@ export class DevelopmentOrchestrator {
     return execution;
   }
 
+  private _categorizeError(error: any): string {
+    if (error instanceof AiError) return error.code;
+    if (error.message.includes('Security Error')) return 'SECURITY_VIOLATION';
+    if (error.message.includes('BUILD_TIMEOUT')) return 'BUILD_TIMEOUT';
+    if (error.message.includes('Invalid AI Output')) return 'INVALID_AI_OUTPUT';
+    return 'UNKNOWN_AGENT_CRASH';
+  }
+
+  private _isFatal(errorType: string): boolean {
+    const fatalTypes = ['AI_NETWORK_FAILURE', 'SECURITY_VIOLATION', 'SYSTEM_ERROR'];
+    return fatalTypes.includes(errorType);
+  }
+
   private async _getDebugContext(projectId: string, errorOutput: string, task: any) {
-    const analysis = await debugAgent.analyzeFailure(projectId, errorOutput, task.description);
-    return {
-      rootCause: analysis.rootCause,
-      errorOutput: errorOutput,
-      suggestedFix: analysis.suggestedFix
-    };
+    try {
+      const analysis = await debugAgent.analyzeFailure(projectId, errorOutput, task.description);
+      return {
+        rootCause: analysis.rootCause,
+        errorOutput: errorOutput,
+        suggestedFix: analysis.suggestedFix
+      };
+    } catch (e) {
+      return {
+        rootCause: 'Failed to analyze logs automatically.',
+        errorOutput: errorOutput,
+        suggestedFix: 'Manual review required.'
+      };
+    }
   }
 }
 

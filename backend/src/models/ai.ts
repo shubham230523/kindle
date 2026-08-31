@@ -24,7 +24,8 @@ export class AiError extends Error {
   constructor(
     message: string,
     public readonly statusCode: number = 500,
-    public readonly provider: string = 'unknown'
+    public readonly provider: string = 'unknown',
+    public readonly code: string = 'AI_GENERAL_ERROR'
   ) {
     super(message);
     this.name = 'AiError';

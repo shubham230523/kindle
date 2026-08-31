@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { workspaceService } from './workspace.service.js';
+import { socketService } from './socket.service.js';
 import { FileModification } from '../../models/coding.js';
 
 export interface Checkpoint {
@@ -21,10 +22,16 @@ export class CodeChangeService {
       for (const change of changes) {
         if (change.type === 'create' || change.type === 'modify') {
           await workspaceService.writeSourceFile(projectId, change.path, change.content);
+          socketService.emit(projectId, 'FILE_GENERATED', { path: change.path, type: change.type });
         } else if (change.type === 'delete') {
           await this.deleteSourceFile(projectId, change.path);
         }
       }
+
+      if (description.toLowerCase().includes('retry')) {
+        socketService.emit(projectId, 'FIX_APPLIED', { description });
+      }
+
       return checkpointId;
     } catch (error) {
       // 2. If something fails, we should ideally rollback immediately

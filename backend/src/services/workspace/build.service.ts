@@ -1,5 +1,6 @@
 import { spawn } from 'child_process';
 import { workspaceService } from './workspace.service.js';
+import { socketService } from './socket.service.js';
 import { BuildStatus, BuildResult } from '../../models/build.js';
 
 export class BuildService {
@@ -13,6 +14,8 @@ export class BuildService {
 
     return new Promise((resolve) => {
       let output = '';
+
+      socketService.emit(projectId, 'BUILD_RUNNING', { platform, command });
 
       const child = spawn(command, args, {
         cwd: sourcePath,

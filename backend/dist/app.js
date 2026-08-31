@@ -1,5 +1,6 @@
 import fastify from 'fastify';
 import cors from '@fastify/cors';
+import websocket from '@fastify/websocket';
 import healthRoutes from './routes/v1/health.js';
 import aiRoutes from './routes/v1/ai.js';
 import discoveryRoutes from './routes/v1/discovery.js';
@@ -16,6 +17,7 @@ import userRoutes from './routes/v1/users.js';
 import errorHandler from './plugins/error-handler.js';
 import { workspaceService } from './services/workspace/workspace.service.js';
 import { storageService } from './services/storage/storage.service.js';
+import { socketService } from './services/workspace/socket.service.js';
 export async function buildApp() {
     // Initialize Workspace & Storage
     await workspaceService.initialize();
@@ -33,6 +35,7 @@ export async function buildApp() {
     });
     // Plugins
     await app.register(cors);
+    await app.register(websocket);
     await app.register(errorHandler);
     // Routes
     await app.register(healthRoutes, { prefix: '/api/v1' });
@@ -48,5 +51,11 @@ export async function buildApp() {
     await app.register(pipelineRoutes, { prefix: '/api/v1' });
     await app.register(authRoutes, { prefix: '/api/v1' });
     await app.register(userRoutes, { prefix: '/api/v1' });
+    // WebSocket Route
+    app.get('/ws/:projectId', { websocket: true }, (connection, req) => {
+        const { projectId } = req.params;
+        socketService.addConnection(projectId, connection);
+        app.log.info(`WebSocket connected for project: \${projectId}`);
+    });
     return app;
 }
