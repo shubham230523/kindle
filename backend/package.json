@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@fastify/cors": "^9.0.1",
+    "@prisma/client": "^7.10.0",
     "axios": "^1.20.0",
     "dotenv": "^16.4.5",
     "fastify": "^4.26.2",

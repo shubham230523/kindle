@@ -8,27 +8,17 @@ import { architectureAgent } from '../ai/architecture.agent.js';
 import { planningAgent } from '../ai/planning.agent.js';
 import { developmentOrchestrator } from './orchestrator.service.js';
 import { ProjectState, PipelineStage } from '../../models/pipeline.js';
+import { storageService } from '../storage/storage.service.js';
 
 export class KindlePipelineService {
 
   async getProjectState(projectId: string): Promise<ProjectState | null> {
-    const projectPath = workspaceService.getProjectPath(projectId);
-    const statePath = path.join(projectPath, 'state.json');
-
-    try {
-      const content = await fs.readFile(statePath, 'utf-8');
-      return JSON.parse(content);
-    } catch {
-      return null;
-    }
+    return storageService.load<ProjectState>('projects', projectId);
   }
 
   async saveProjectState(state: ProjectState): Promise<void> {
-    const projectPath = workspaceService.getProjectPath(state.id);
-    const statePath = path.join(projectPath, 'state.json');
-
     state.updatedAt = new Date().toISOString();
-    await fs.writeFile(statePath, JSON.stringify(state, null, 2));
+    await storageService.save('projects', state.id, state);
   }
 
   async initializeProject(id: string, idea: string): Promise<ProjectState> {

@@ -1,5 +1,3 @@
-import { promises as fs } from 'fs';
-import path from 'path';
 import { workspaceService } from './workspace.service.js';
 import { discoveryAgent } from '../ai/discovery.agent.js';
 import { productAgent } from '../ai/product.agent.js';
@@ -8,23 +6,14 @@ import { architectureAgent } from '../ai/architecture.agent.js';
 import { planningAgent } from '../ai/planning.agent.js';
 import { developmentOrchestrator } from './orchestrator.service.js';
 import { PipelineStage } from '../../models/pipeline.js';
+import { storageService } from '../storage/storage.service.js';
 export class KindlePipelineService {
     async getProjectState(projectId) {
-        const projectPath = workspaceService.getProjectPath(projectId);
-        const statePath = path.join(projectPath, 'state.json');
-        try {
-            const content = await fs.readFile(statePath, 'utf-8');
-            return JSON.parse(content);
-        }
-        catch {
-            return null;
-        }
+        return storageService.load('projects', projectId);
     }
     async saveProjectState(state) {
-        const projectPath = workspaceService.getProjectPath(state.id);
-        const statePath = path.join(projectPath, 'state.json');
         state.updatedAt = new Date().toISOString();
-        await fs.writeFile(statePath, JSON.stringify(state, null, 2));
+        await storageService.save('projects', state.id, state);
     }
     async initializeProject(id, idea) {
         const now = new Date().toISOString();

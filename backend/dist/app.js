@@ -11,11 +11,14 @@ import projectRoutes from './routes/v1/projects.js';
 import codingRoutes from './routes/v1/coding.js';
 import developmentRoutes from './routes/v1/development.js';
 import pipelineRoutes from './routes/v1/pipeline.js';
+import userRoutes from './routes/v1/users.js';
 import errorHandler from './plugins/error-handler.js';
 import { workspaceService } from './services/workspace/workspace.service.js';
+import { storageService } from './services/storage/storage.service.js';
 export async function buildApp() {
-    // Initialize Workspace Root
+    // Initialize Workspace & Storage
     await workspaceService.initialize();
+    await storageService.initialize();
     const app = fastify({
         logger: {
             transport: {
@@ -42,5 +45,6 @@ export async function buildApp() {
     await app.register(codingRoutes, { prefix: '/api/v1' });
     await app.register(developmentRoutes, { prefix: '/api/v1' });
     await app.register(pipelineRoutes, { prefix: '/api/v1' });
+    await app.register(userRoutes, { prefix: '/api/v1' });
     return app;
 }
