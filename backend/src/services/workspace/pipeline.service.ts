@@ -12,8 +12,12 @@ import { storageService } from '../storage/storage.service.js';
 
 export class KindlePipelineService {
 
-  async getProjectState(projectId: string): Promise<ProjectState | null> {
-    return storageService.load<ProjectState>('projects', projectId);
+  async getProjectState(projectId: string, userId: string): Promise<ProjectState | null> {
+    const state = await storageService.load<ProjectState>('projects', projectId);
+    if (state && state.userId !== userId) {
+      throw new Error('Unauthorized access to project');
+    }
+    return state;
   }
 
   async saveProjectState(state: ProjectState): Promise<void> {
@@ -21,10 +25,11 @@ export class KindlePipelineService {
     await storageService.save('projects', state.id, state);
   }
 
-  async initializeProject(id: string, idea: string): Promise<ProjectState> {
+  async initializeProject(id: string, idea: string, userId: string): Promise<ProjectState> {
     const now = new Date().toISOString();
     const state: ProjectState = {
       id,
+      userId,
       stage: PipelineStage.discovery,
       createdAt: now,
       updatedAt: now,
@@ -45,8 +50,8 @@ export class KindlePipelineService {
     return state;
   }
 
-  async advancePipeline(projectId: string, userInput?: string): Promise<ProjectState> {
-    const state = await this.getProjectState(projectId);
+  async advancePipeline(projectId: string, userId: string, userInput?: string): Promise<ProjectState> {
+    const state = await this.getProjectState(projectId, userId);
     if (!state) throw new Error('Project state not found');
 
     switch (state.stage) {

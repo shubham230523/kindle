@@ -1,8 +1,18 @@
 import { developmentOrchestrator } from '../../services/workspace/orchestrator.service.js';
 import { executionService } from '../../services/workspace/execution.service.js';
+import { storageService } from '../../services/storage/storage.service.js';
+import { authGuard } from '../../plugins/auth-guard.js';
 export default async function developmentRoutes(fastify) {
-    fastify.post('/development/run-task', async (request, reply) => {
+    async function checkOwnership(projectId, userId) {
+        const project = await storageService.load('projects', projectId);
+        if (!project)
+            throw new Error('Project not found');
+        if (project.userId !== userId)
+            throw new Error('Unauthorized');
+    }
+    fastify.post('/development/run-task', { preHandler: [authGuard] }, async (request, reply) => {
         const { projectId, task, architecture } = request.body;
+        const userId = request.user.id;
         if (!projectId || !task || !architecture) {
             return reply.status(400).send({
                 error: 'Bad Request',
@@ -10,29 +20,27 @@ export default async function developmentRoutes(fastify) {
             });
         }
         try {
-            // Start in background and return immediate response?
-            // For now, simple wait and return to keep it easy for initial integration
+            await checkOwnership(projectId, userId);
             const execution = await developmentOrchestrator.runTask(projectId, task, architecture);
             return execution;
         }
         catch (error) {
-            fastify.log.error(error);
-            return reply.status(500).send({
-                error: 'Internal Server Error',
-                message: error.message,
+            return reply.status(error.message === 'Unauthorized' ? 403 : 500).send({
+                error: error.message,
             });
         }
     });
-    fastify.get('/development/:projectId/history', async (request, reply) => {
+    fastify.get('/development/:projectId/history', { preHandler: [authGuard] }, async (request, reply) => {
         const { projectId } = request.params;
+        const userId = request.user.id;
         try {
+            await checkOwnership(projectId, userId);
             const history = await executionService.listExecutions(projectId);
             return { history };
         }
         catch (error) {
-            return reply.status(500).send({
-                error: 'Internal Server Error',
-                message: error.message,
+            return reply.status(error.message === 'Unauthorized' ? 403 : 500).send({
+                error: error.message,
             });
         }
     });

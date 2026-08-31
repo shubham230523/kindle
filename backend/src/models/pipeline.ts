@@ -17,6 +17,7 @@ export enum PipelineStage {
 
 export interface ProjectState {
   id: string;
+  userId: string;
   stage: PipelineStage;
   discovery?: DiscoveryResult;
   product?: ProductSummary;

@@ -8,17 +8,22 @@ import { developmentOrchestrator } from './orchestrator.service.js';
 import { PipelineStage } from '../../models/pipeline.js';
 import { storageService } from '../storage/storage.service.js';
 export class KindlePipelineService {
-    async getProjectState(projectId) {
-        return storageService.load('projects', projectId);
+    async getProjectState(projectId, userId) {
+        const state = await storageService.load('projects', projectId);
+        if (state && state.userId !== userId) {
+            throw new Error('Unauthorized access to project');
+        }
+        return state;
     }
     async saveProjectState(state) {
         state.updatedAt = new Date().toISOString();
         await storageService.save('projects', state.id, state);
     }
-    async initializeProject(id, idea) {
+    async initializeProject(id, idea, userId) {
         const now = new Date().toISOString();
         const state = {
             id,
+            userId,
             stage: PipelineStage.discovery,
             createdAt: now,
             updatedAt: now,
@@ -36,8 +41,8 @@ export class KindlePipelineService {
         await this.saveProjectState(state);
         return state;
     }
-    async advancePipeline(projectId, userInput) {
-        const state = await this.getProjectState(projectId);
+    async advancePipeline(projectId, userId, userInput) {
+        const state = await this.getProjectState(projectId, userId);
         if (!state)
             throw new Error('Project state not found');
         switch (state.stage) {
