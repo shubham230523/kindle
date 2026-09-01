@@ -5,6 +5,9 @@ import '../../project/models/agent_execution.dart';
 import '../../project/models/task.dart';
 import '../../../core/services/agent_simulator_service.dart';
 
+import '../../project/models/phase.dart';
+import '../../project/models/development_plan.dart';
+
 class WorkspaceViewModel extends ChangeNotifier {
   final AgentExecutionService _executionService;
   
@@ -30,33 +33,101 @@ class WorkspaceViewModel extends ChangeNotifier {
   WorkspaceViewModel(this._project, this._executionService);
 
   void startDevelopment() async {
-    if (_isDeveloping) return;
+    debugPrint('WorkspaceViewModel: startDevelopment called');
+    if (_isDeveloping) {
+      debugPrint('WorkspaceViewModel: Already developing, ignoring request');
+      return;
+    }
+    
+    // Ensure we have a development plan
+    if (_project.developmentPlan == null || _project.developmentPlan!.phases.isEmpty) {
+      debugPrint('WorkspaceViewModel: No plan found, generating default plan');
+      _generateDefaultPlan();
+    }
+
+    debugPrint('WorkspaceViewModel: Setting _isDeveloping to true');
     _isDeveloping = true;
     notifyListeners();
 
-    while (_isDeveloping) {
-      final nextTask = _getNextPendingTask();
-      if (nextTask == null) {
-        _isDeveloping = false;
-        break;
-      }
+    try {
+      while (_isDeveloping) {
+        final nextTask = _getNextPendingTask();
+        if (nextTask == null) {
+          debugPrint('WorkspaceViewModel: No more pending tasks found');
+          _isDeveloping = false;
+          break;
+        }
 
-      final agent = _assignAgentForTask(nextTask);
-      
-      await for (final execution in _executionService.executeTask(nextTask, agent)) {
-        _activeExecution = execution;
-        notifyListeners();
-      }
+        debugPrint('WorkspaceViewModel: Next task: ${nextTask.title} (ID: ${nextTask.id})');
+        final agent = _assignAgentForTask(nextTask);
+        debugPrint('WorkspaceViewModel: Assigned agent: ${agent.name}');
+        
+        await for (final execution in _executionService.executeTask(nextTask, agent)) {
+          if (!_isDeveloping) {
+            debugPrint('WorkspaceViewModel: Development stopped mid-task');
+            break;
+          }
+          _activeExecution = execution;
+          notifyListeners();
+        }
 
-      if (_activeExecution?.status == ExecutionStatus.completed) {
-        _markTaskAsDone(nextTask.id);
-      } else {
-        _isDeveloping = false; // Stop on failure (simulated for now)
+        if (_activeExecution?.status == ExecutionStatus.completed) {
+          debugPrint('WorkspaceViewModel: Task completed successfully: ${nextTask.id}');
+          _markTaskAsDone(nextTask.id);
+        } else {
+          debugPrint('WorkspaceViewModel: Task did not complete (Status: ${_activeExecution?.status})');
+          _isDeveloping = false; 
+        }
       }
+    } catch (e) {
+      debugPrint('WorkspaceViewModel: ERROR during development: $e');
+      _isDeveloping = false;
+    } finally {
+      debugPrint('WorkspaceViewModel: Cleaning up development state');
+      _isDeveloping = false;
+      _activeExecution = null;
+      notifyListeners();
     }
-    
-    _isDeveloping = false;
-    _activeExecution = null;
+  }
+
+  void _generateDefaultPlan() {
+    final projectId = _project.id;
+    final dummyPlan = DevelopmentPlan(
+      id: 'dp_${DateTime.now().millisecondsSinceEpoch}',
+      projectId: projectId,
+      createdAt: DateTime.now(),
+      phases: [
+        Phase(
+          id: 'p1',
+          title: 'Project Setup',
+          description: 'Initial structure and configuration.',
+          tasks: [
+            Task(
+              id: 't1',
+              phaseId: 'p1',
+              title: 'Bootstrap Flutter App',
+              description: 'Create Flutter project and add dependencies.',
+              status: TaskStatus.todo,
+            ),
+          ],
+        ),
+        Phase(
+          id: 'p2',
+          title: 'Core Features',
+          description: 'Implementing main functionality.',
+          tasks: [
+            Task(
+              id: 't2',
+              phaseId: 'p2',
+              title: 'UI Components',
+              description: 'Build basic UI elements.',
+              status: TaskStatus.todo,
+            ),
+          ],
+        ),
+      ],
+    );
+    _project = _project.copyWith(developmentPlan: dummyPlan);
     notifyListeners();
   }
 

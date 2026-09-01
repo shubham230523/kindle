@@ -19,9 +19,13 @@ class SectionTitle extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: AppConstants.spacingMd),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Expanded(
+          Flexible(
+            fit: FlexFit.loose,
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -43,8 +47,11 @@ class SectionTitle extends StatelessWidget {
               ],
             ),
           ),
-          trailing,
-        ].whereType<Widget>().toList(),
+          if (trailing != null) ...[
+            const SizedBox(width: AppConstants.spacingMd),
+            trailing!,
+          ],
+        ],
       ),
     );
   }

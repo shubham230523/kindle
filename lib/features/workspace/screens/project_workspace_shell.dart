@@ -113,56 +113,70 @@ class _ProjectWorkspaceShellState extends State<ProjectWorkspaceShell> {
           body: Row(
             children: [
               if (!isMobile)
-                NavigationRail(
-                  extended: isDesktop,
-                  selectedIndex: _selectedIndex,
-                  onDestinationSelected: (int index) {
-                    setState(() {
-                      _selectedIndex = index;
-                    });
-                  },
-                  leading: isDesktop
-                      ? Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.auto_awesome, color: AppColors.primary),
-                                  const SizedBox(width: 12),
-                                  Text(
-                                    'KINDLE',
-                                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          letterSpacing: 2,
-                                          color: AppColors.primary,
-                                        ),
-                                  ),
-                                ],
-                              ),
-                              if (_viewModel.isDeveloping)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 8.0, left: 36.0),
-                                  child: Text(
-                                    'DEVELOPING...',
-                                    style: TextStyle(color: Colors.amber.shade700, fontSize: 10, fontWeight: FontWeight.bold),
-                                  ),
-                                ),
-                            ],
+                SizedBox(
+                  width: isDesktop ? 240 : 80,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      return SingleChildScrollView(
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                          child: IntrinsicHeight(
+                            child: NavigationRail(
+                              extended: isDesktop,
+                              selectedIndex: _selectedIndex,
+                              onDestinationSelected: (int index) {
+                                setState(() {
+                                  _selectedIndex = index;
+                                });
+                              },
+                              leading: isDesktop
+                                  ? Padding(
+                                      padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 16.0),
+                                      child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            children: [
+                                              const Icon(Icons.auto_awesome, color: AppColors.primary),
+                                              const SizedBox(width: 12),
+                                              Text(
+                                                'KINDLE',
+                                                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                                                      fontWeight: FontWeight.bold,
+                                                      letterSpacing: 2,
+                                                      color: AppColors.primary,
+                                                    ),
+                                              ),
+                                            ],
+                                          ),
+                                          if (_viewModel.isDeveloping)
+                                            Padding(
+                                              padding: const EdgeInsets.only(top: 8.0, left: 36.0),
+                                              child: Text(
+                                                'DEVELOPING...',
+                                                style: TextStyle(color: Colors.amber.shade700, fontSize: 10, fontWeight: FontWeight.bold),
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    )
+                                  : const Padding(
+                                      padding: EdgeInsets.symmetric(vertical: 24.0),
+                                      child: Icon(Icons.auto_awesome, color: AppColors.primary),
+                                    ),
+                              destinations: _destinations.map((d) {
+                                return NavigationRailDestination(
+                                  icon: Icon(d.icon),
+                                  selectedIcon: Icon(d.selectedIcon),
+                                  label: Text(d.label),
+                                );
+                              }).toList(),
+                            ),
                           ),
-                        )
-                      : const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 24.0),
-                          child: Icon(Icons.auto_awesome, color: AppColors.primary),
                         ),
-                  destinations: _destinations.map((d) {
-                    return NavigationRailDestination(
-                      icon: Icon(d.icon),
-                      selectedIcon: Icon(d.selectedIcon),
-                      label: Text(d.label),
-                    );
-                  }).toList(),
+                      );
+                    },
+                  ),
                 ),
               const VerticalDivider(thickness: 1, width: 1),
               Expanded(child: _buildBody()),
@@ -187,7 +201,15 @@ class _ProjectWorkspaceShellState extends State<ProjectWorkspaceShell> {
               : null,
           floatingActionButton: _selectedIndex == 0 && !_viewModel.isDeveloping
               ? FloatingActionButton.extended(
-                  onPressed: () => _viewModel.startDevelopment(),
+                  onPressed: () {
+                    _viewModel.startDevelopment();
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Agents are starting development...'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  },
                   icon: const Icon(Icons.play_arrow),
                   label: const Text('Start Development'),
                   backgroundColor: AppColors.primary,

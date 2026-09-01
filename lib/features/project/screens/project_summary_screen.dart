@@ -298,17 +298,14 @@ class _PlatformsSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const SectionTitle(title: 'Target Platforms'),
-            TextButton(
-              onPressed: () {
-                // Should navigate to platform selection again if needed
-              },
-              child: const Text('Change'),
-            ),
-          ],
+        SectionTitle(
+          title: 'Target Platforms',
+          trailing: TextButton(
+            onPressed: () {
+              // Should navigate to platform selection again if needed
+            },
+            child: const Text('Change'),
+          ),
         ),
         KindleCard(
           child: Wrap(
@@ -339,17 +336,14 @@ class _TechSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const SectionTitle(title: 'Spark Stack'),
-            TextButton(
-              onPressed: () {
-                // Navigate back to tech selection
-              },
-              child: const Text('Change'),
-            ),
-          ],
+        SectionTitle(
+          title: 'Spark Stack',
+          trailing: TextButton(
+            onPressed: () {
+              // Navigate back to tech selection
+            },
+            child: const Text('Change'),
+          ),
         ),
         KindleCard(
           child: Row(
@@ -378,17 +372,14 @@ class _BackendDatabaseSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const SectionTitle(title: 'Infrastructure'),
-            TextButton(
-              onPressed: () {
-                // Navigate back to backend selection
-              },
-              child: const Text('Change'),
-            ),
-          ],
+        SectionTitle(
+          title: 'Infrastructure',
+          trailing: TextButton(
+            onPressed: () {
+              // Navigate back to backend selection
+            },
+            child: const Text('Change'),
+          ),
         ),
         KindleCard(
           child: Column(

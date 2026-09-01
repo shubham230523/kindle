@@ -14,41 +14,47 @@ class ProjectDashboardScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Workspace Overview'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_none),
-            onPressed: () {},
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: kMaxContentWidth),
-            child: Padding(
-              padding: const EdgeInsets.all(AppConstants.spacingMd),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _ProjectHeader(project: project),
-                  const SizedBox(height: AppConstants.spacingLg),
-                  _ProgressSection(project: project),
-                  const SizedBox(height: AppConstants.spacingLg),
-                  _TechnicalStackSection(project: project),
-                  const SizedBox(height: AppConstants.spacingLg),
-                  _QuickActionsSection(),
-                  const SizedBox(height: AppConstants.spacingLg),
-                  _RecentActivitySection(),
-                  const SizedBox(height: AppConstants.spacingXl),
-                ],
+    return Column(
+      children: [
+        AppBar(
+          title: const Text('Workspace Overview'),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.notifications_none),
+              onPressed: () {},
+            ),
+          ],
+        ),
+        Expanded(
+          child: SingleChildScrollView(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: kMaxContentWidth),
+                child: Padding(
+                  padding: const EdgeInsets.all(AppConstants.spacingMd),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _ProjectHeader(project: project),
+                      const SizedBox(height: AppConstants.spacingLg),
+                      _ProgressSection(project: project),
+                      const SizedBox(height: AppConstants.spacingLg),
+                      _TechnicalStackSection(project: project),
+                      const SizedBox(height: AppConstants.spacingLg),
+                      _QuickActionsSection(),
+                      const SizedBox(height: AppConstants.spacingLg),
+                      _RecentActivitySection(),
+                      const SizedBox(height: AppConstants.spacingXl),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 }
@@ -136,6 +142,7 @@ class _ProgressSection extends StatelessWidget {
     }
     
     final progress = totalTasks == 0 ? 0.0 : doneTasks / totalTasks;
+    final bool isComplete = totalTasks > 0 && doneTasks == totalTasks;
 
     return KindleCard(
       child: Column(
@@ -143,7 +150,11 @@ class _ProgressSection extends StatelessWidget {
         children: [
           SectionTitle(
             title: 'Development Progress',
-            subtitle: doneTasks == totalTasks ? 'Project complete!' : '$doneTasks of $totalTasks tasks complete',
+            subtitle: isComplete 
+                ? 'Project complete!' 
+                : totalTasks == 0 
+                    ? 'No development plan generated yet.' 
+                    : '$doneTasks of $totalTasks tasks complete',
           ),
           const SizedBox(height: AppConstants.spacingSm),
           ClipRRect(

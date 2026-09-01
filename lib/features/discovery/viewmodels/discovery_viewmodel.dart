@@ -6,6 +6,9 @@ import '../models/discovery_backend_result.dart';
 import '../../project/models/project.dart';
 import '../../project/models/requirement.dart';
 import '../../project/models/feature.dart';
+import '../../project/models/phase.dart';
+import '../../project/models/task.dart';
+import '../../project/models/development_plan.dart';
 import '../../../core/services/discovery_service.dart';
 
 class DiscoveryViewModel extends ChangeNotifier {
@@ -176,14 +179,67 @@ class DiscoveryViewModel extends ChangeNotifier {
     );
     _generateSummaryFromBackend(result);
     
-    // Explicitly update extra fields for dummy data
+    // Explicitly update extra fields and add a dummy development plan
     if (_state.generatedProject != null) {
+      final projectId = _state.generatedProject!.id;
+      
+      final dummyPlan = DevelopmentPlan(
+        id: 'dp1',
+        projectId: projectId,
+        createdAt: DateTime.now(),
+        phases: [
+          Phase(
+            id: 'p1',
+            title: 'Foundations',
+            description: 'Setup project structure and core configurations.',
+            tasks: [
+              Task(
+                id: 't1',
+                phaseId: 'p1',
+                title: 'Initialize Project',
+                description: 'Create the base project structure and repository.',
+                status: TaskStatus.todo,
+              ),
+              Task(
+                id: 't2',
+                phaseId: 'p1',
+                title: 'Setup Authentication',
+                description: 'Implement user login and registration.',
+                status: TaskStatus.todo,
+              ),
+            ],
+          ),
+          Phase(
+            id: 'p2',
+            title: 'Core Features',
+            description: 'Implement the essential functionality of SyncTasks.',
+            tasks: [
+              Task(
+                id: 't3',
+                phaseId: 'p2',
+                title: 'Task CRUD',
+                description: 'Implement Create, Read, Update, and Delete for tasks.',
+                status: TaskStatus.todo,
+              ),
+              Task(
+                id: 't4',
+                phaseId: 'p2',
+                title: 'Cloud Sync Engine',
+                description: 'Implement real-time data synchronization logic.',
+                status: TaskStatus.todo,
+              ),
+            ],
+          ),
+        ],
+      );
+
       _state = _state.copyWith(
         generatedProject: _state.generatedProject!.copyWith(
           name: "SyncTasks",
           targetUsers: "Productive professionals and students",
           problemStatement: "Difficulty keeping task lists updated across multiple devices.",
           platforms: ["android", "ios"],
+          developmentPlan: dummyPlan,
         ),
       );
     }
