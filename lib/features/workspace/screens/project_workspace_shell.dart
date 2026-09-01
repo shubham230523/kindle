@@ -69,7 +69,7 @@ class _ProjectWorkspaceShellState extends State<ProjectWorkspaceShell> {
       case 5:
         return GeneratedChangesScreen(project: _viewModel.project);
       case 6:
-        return const GeneratedCodeScreen();
+        return GeneratedCodeScreen(fileSystem: _viewModel.virtualFileSystem);
       case 7:
         return BuildDashboardScreen(project: _viewModel.project);
       case 8:

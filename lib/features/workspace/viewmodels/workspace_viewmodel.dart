@@ -8,6 +8,8 @@ import '../../../core/services/agent_simulator_service.dart';
 import '../../project/models/phase.dart';
 import '../../project/models/development_plan.dart';
 
+import '../models/file_node.dart';
+
 class WorkspaceViewModel extends ChangeNotifier {
   final AgentExecutionService _executionService;
   
@@ -19,6 +21,9 @@ class WorkspaceViewModel extends ChangeNotifier {
   
   AgentExecution? _activeExecution;
   AgentExecution? get activeExecution => _activeExecution;
+
+  List<FileNode> _virtualFileSystem = [];
+  List<FileNode> get virtualFileSystem => _virtualFileSystem;
   
   final List<Agent> _agents = [
     const Agent(id: 'a1', name: 'Discovery Agent', type: AgentType.manager, description: 'Understands ideas.'),
@@ -30,64 +35,117 @@ class WorkspaceViewModel extends ChangeNotifier {
   
   List<Agent> get agents => _agents;
   
-  WorkspaceViewModel(this._project, this._executionService);
+  WorkspaceViewModel(this._project, this._executionService) {
+    _initializeFileSystem();
+  }
+
+  void _initializeFileSystem() {
+    // Initial basic structure
+    _virtualFileSystem = [
+      FileNode(
+        name: 'lib',
+        isFolder: true,
+        isExpanded: true,
+        children: [
+          FileNode(name: 'main.dart', content: 'void main() {\n  runApp(const KindleApp());\n}'),
+        ],
+      ),
+      FileNode(name: 'pubspec.yaml', content: 'name: ${_project.name.toLowerCase().replaceAll(' ', '_')}\ndependencies:\n  flutter:\n    sdk: flutter'),
+      FileNode(name: 'README.md', content: '# ${_project.name}\n\n${_project.description}'),
+    ];
+  }
 
   void startDevelopment() async {
     debugPrint('WorkspaceViewModel: startDevelopment called');
-    if (_isDeveloping) {
-      debugPrint('WorkspaceViewModel: Already developing, ignoring request');
-      return;
-    }
+    if (_isDeveloping) return;
     
-    // Ensure we have a development plan
     if (_project.developmentPlan == null || _project.developmentPlan!.phases.isEmpty) {
-      debugPrint('WorkspaceViewModel: No plan found, generating default plan');
       _generateDefaultPlan();
     }
 
-    debugPrint('WorkspaceViewModel: Setting _isDeveloping to true');
     _isDeveloping = true;
+    _project = _project.copyWith(status: ProjectStatus.inProgress);
     notifyListeners();
 
     try {
       while (_isDeveloping) {
         final nextTask = _getNextPendingTask();
         if (nextTask == null) {
-          debugPrint('WorkspaceViewModel: No more pending tasks found');
           _isDeveloping = false;
+          _project = _project.copyWith(status: ProjectStatus.completed);
           break;
         }
 
-        debugPrint('WorkspaceViewModel: Next task: ${nextTask.title} (ID: ${nextTask.id})');
         final agent = _assignAgentForTask(nextTask);
-        debugPrint('WorkspaceViewModel: Assigned agent: ${agent.name}');
         
         await for (final execution in _executionService.executeTask(nextTask, agent)) {
-          if (!_isDeveloping) {
-            debugPrint('WorkspaceViewModel: Development stopped mid-task');
-            break;
-          }
+          if (!_isDeveloping) break;
           _activeExecution = execution;
           notifyListeners();
         }
 
         if (_activeExecution?.status == ExecutionStatus.completed) {
-          debugPrint('WorkspaceViewModel: Task completed successfully: ${nextTask.id}');
           _markTaskAsDone(nextTask.id);
+          _simulateFileGeneration(nextTask);
         } else {
-          debugPrint('WorkspaceViewModel: Task did not complete (Status: ${_activeExecution?.status})');
           _isDeveloping = false; 
         }
       }
     } catch (e) {
-      debugPrint('WorkspaceViewModel: ERROR during development: $e');
+      debugPrint('WorkspaceViewModel: ERROR: $e');
       _isDeveloping = false;
     } finally {
-      debugPrint('WorkspaceViewModel: Cleaning up development state');
       _isDeveloping = false;
       _activeExecution = null;
       notifyListeners();
     }
+  }
+
+  void _simulateFileGeneration(Task task) {
+    // Based on the task, add files to the virtual file system
+    if (task.id == 't1' || task.title.contains('Initialize')) {
+      // Already handled by _initializeFileSystem
+    } else if (task.id == 't2' || task.title.contains('Authentication')) {
+      _addFileToFeature('auth', 'login_screen.dart', 'class LoginScreen extends StatelessWidget {...}');
+      _addFileToFeature('auth', 'auth_viewmodel.dart', 'class AuthViewModel extends ChangeNotifier {...}');
+    } else if (task.id == 't3' || task.title.contains('CRUD')) {
+      _addFileToFeature('tasks', 'task_list_screen.dart', 'class TaskListScreen extends StatelessWidget {...}');
+      _addFileToFeature('tasks', 'task_model.dart', 'class TaskModel {...}');
+    } else if (task.id == 't4' || task.title.contains('Sync')) {
+      _addFileToCore('sync_engine.dart', 'class SyncEngine {...}');
+    }
+    notifyListeners();
+  }
+
+  void _addFileToFeature(String featureName, String fileName, String content) {
+    // Logic to find 'features' folder and add file
+    final lib = _virtualFileSystem.firstWhere((n) => n.name == 'lib');
+    var features = lib.children?.firstWhere((n) => n.name == 'features', orElse: () {
+      final f = FileNode(name: 'features', isFolder: true, children: []);
+      lib.children?.add(f);
+      return f;
+    });
+    
+    var feature = features?.children?.firstWhere((n) => n.name == featureName, orElse: () {
+      final f = FileNode(name: featureName, isFolder: true, children: []);
+      features.children?.add(f);
+      return f;
+    });
+
+    if (feature?.children?.any((n) => n.name == fileName) ?? false) return;
+    feature?.children?.add(FileNode(name: fileName, content: content));
+  }
+
+  void _addFileToCore(String fileName, String content) {
+    final lib = _virtualFileSystem.firstWhere((n) => n.name == 'lib');
+    var core = lib.children?.firstWhere((n) => n.name == 'core', orElse: () {
+      final f = FileNode(name: 'core', isFolder: true, children: []);
+      lib.children?.add(f);
+      return f;
+    });
+
+    if (core?.children?.any((n) => n.name == fileName) ?? false) return;
+    core?.children?.add(FileNode(name: fileName, content: content));
   }
 
   void _generateDefaultPlan() {
