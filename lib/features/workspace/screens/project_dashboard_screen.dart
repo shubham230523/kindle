@@ -7,10 +7,19 @@ import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/responsive_layout.dart';
 
+import '../../project/models/agent_execution.dart';
+
 class ProjectDashboardScreen extends StatelessWidget {
   final Project project;
+  final bool isDeveloping;
+  final AgentExecution? activeExecution;
 
-  const ProjectDashboardScreen({super.key, required this.project});
+  const ProjectDashboardScreen({
+    super.key,
+    required this.project,
+    this.isDeveloping = false,
+    this.activeExecution,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +30,17 @@ class ProjectDashboardScreen extends StatelessWidget {
           backgroundColor: Colors.transparent,
           elevation: 0,
           actions: [
+            if (isDeveloping)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.only(right: 16.0),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                  ),
+                ),
+              ),
             IconButton(
               icon: const Icon(Icons.notifications_none),
               onPressed: () {},
@@ -39,6 +59,10 @@ class ProjectDashboardScreen extends StatelessWidget {
                     children: [
                       _ProjectHeader(project: project),
                       const SizedBox(height: AppConstants.spacingLg),
+                      if (isDeveloping && activeExecution != null) ...[
+                        _CurrentActivityCard(execution: activeExecution!),
+                        const SizedBox(height: AppConstants.spacingLg),
+                      ],
                       _ProgressSection(project: project),
                       const SizedBox(height: AppConstants.spacingLg),
                       _TechnicalStackSection(project: project),
@@ -55,6 +79,64 @@ class ProjectDashboardScreen extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _CurrentActivityCard extends StatelessWidget {
+  final AgentExecution execution;
+  const _CurrentActivityCard({required this.execution});
+
+  @override
+  Widget build(BuildContext context) {
+    final latestLog = execution.logs.isNotEmpty ? execution.logs.last : null;
+    
+    return KindleCard(
+      color: Colors.amber.shade50,
+      borderColor: Colors.amber.shade200,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.auto_awesome, color: Colors.amber, size: 20),
+              const SizedBox(width: 8),
+              Text(
+                'AGENT ACTIVE',
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: Colors.amber.shade900,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.2,
+                ),
+              ),
+              const Spacer(),
+              Text(
+                execution.status.name.toUpperCase(),
+                style: TextStyle(fontSize: 10, color: Colors.amber.shade700, fontWeight: FontWeight.bold),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            latestLog?.message ?? 'Initializing task...',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          if (latestLog?.details != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              latestLog!.details!,
+              style: TextStyle(color: Colors.grey.shade700, fontSize: 13),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+          const SizedBox(height: 12),
+          const LinearProgressIndicator(
+            backgroundColor: Colors.white,
+            valueColor: AlwaysStoppedAnimation<Color>(Colors.amber),
+          ),
+        ],
+      ),
     );
   }
 }

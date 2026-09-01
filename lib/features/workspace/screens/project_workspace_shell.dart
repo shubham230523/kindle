@@ -57,7 +57,11 @@ class _ProjectWorkspaceShellState extends State<ProjectWorkspaceShell> {
   Widget _buildBody() {
     switch (_selectedIndex) {
       case 0:
-        return ProjectDashboardScreen(project: _viewModel.project);
+        return ProjectDashboardScreen(
+          project: _viewModel.project,
+          isDeveloping: _viewModel.isDeveloping,
+          activeExecution: _viewModel.activeExecution,
+        );
       case 1:
         return RequirementsListScreen(project: _viewModel.project);
       case 2:
@@ -205,8 +209,15 @@ class _ProjectWorkspaceShellState extends State<ProjectWorkspaceShell> {
                     _viewModel.startDevelopment();
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Agents are starting development...'),
-                        duration: Duration(seconds: 2),
+                        content: Row(
+                          children: [
+                            Icon(Icons.auto_awesome, color: Colors.white),
+                            SizedBox(width: 8),
+                            Text('Kindle Agents have started development!'),
+                          ],
+                        ),
+                        backgroundColor: AppColors.primary,
+                        behavior: SnackBarBehavior.floating,
                       ),
                     );
                   },

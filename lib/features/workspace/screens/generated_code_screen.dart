@@ -1,12 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/file_node.dart';
-import '../../../core/theme/app_colors.dart';
-import '../../../core/utils/responsive_layout.dart';
-
-import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import '../models/file_node.dart';
 import '../../project/models/project.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/responsive_layout.dart';
@@ -55,7 +49,7 @@ class _GeneratedCodeScreenState extends State<GeneratedCodeScreen> {
     return Scaffold(
       backgroundColor: Colors.white,
       body: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch, // Ensure children fill height
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // Sidebar Explorer
           SizedBox(
@@ -65,18 +59,23 @@ class _GeneratedCodeScreenState extends State<GeneratedCodeScreen> {
                 color: Colors.grey.shade50,
                 border: Border(right: BorderSide(color: Colors.grey.shade200)),
               ),
-              child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     child: Text('EXPLORER', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.grey)),
                   ),
-                  ...widget.fileSystem.map((node) => _FileTreeItem(
-                    node: node,
-                    level: 0,
-                    onSelected: _openFile,
-                  )),
+                  Expanded(
+                    child: ListView(
+                      padding: EdgeInsets.zero,
+                      children: widget.fileSystem.map((node) => _FileTreeItem(
+                        node: node,
+                        level: 0,
+                        onSelected: _openFile,
+                      )).toList(),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -84,12 +83,12 @@ class _GeneratedCodeScreenState extends State<GeneratedCodeScreen> {
           // Main Code Area
           Expanded(
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch, // FIX: Fill full width
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 if (_openFiles.isNotEmpty) _buildTabBar(),
                 Expanded(
                   child: Container(
-                    color: const Color(0xFFFCFCFC), // Editor background
+                    color: const Color(0xFFFCFCFC),
                     child: _activeTabIndex == -1
                         ? _buildEmptyState()
                         : _CodeViewer(file: _openFiles[_activeTabIndex]),
@@ -172,7 +171,7 @@ class _CodeViewer extends StatelessWidget {
     final lines = (file.content ?? '').split('\n');
 
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch, // Ensure toolbar and code fill width
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         // Toolbar
         Container(
@@ -203,53 +202,137 @@ class _CodeViewer extends StatelessWidget {
         Expanded(
           child: Container(
             color: const Color(0xFFFCFCFC),
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SingleChildScrollView(
-                child: IntrinsicHeight( // Ensure vertical divider and line numbers fill height
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Line Numbers
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                        color: Colors.grey.shade50,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: List.generate(
-                            lines.length,
-                            (i) => Text(
-                              '${i + 1}',
-                              style: const TextStyle(
-                                fontFamily: 'monospace',
-                                fontSize: 13,
-                                color: Colors.grey,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(minWidth: constraints.maxWidth),
+                    child: SingleChildScrollView(
+                      child: IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Line Numbers
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                              color: Colors.grey.shade50,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: List.generate(
+                                  lines.length,
+                                  (i) => Text(
+                                    '${i + 1}',
+                                    style: const TextStyle(
+                                      fontFamily: 'monospace',
+                                      fontSize: 13,
+                                      color: Colors.grey,
+                                    ),
+                                  ),
+                                ),
                               ),
                             ),
-                          ),
+                            const VerticalDivider(width: 1),
+                            // Content
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                                child: SelectableText(
+                                  file.content ?? '',
+                                  style: const TextStyle(
+                                    fontFamily: 'monospace',
+                                    fontSize: 13,
+                                    height: 1.5,
+                                    color: Color(0xFF24292E),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      const VerticalDivider(width: 1),
-                      // Content
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                        child: SelectableText(
-                          file.content ?? '',
-                          style: const TextStyle(
-                            fontFamily: 'monospace',
-                            fontSize: 13,
-                            height: 1.5,
-                            color: Color(0xFF24292E),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ),
         ),
+      ],
+    );
+  }
+}
+
+class _FileTreeItem extends StatefulWidget {
+  final FileNode node;
+  final int level;
+  final Function(FileNode) onSelected;
+
+  const _FileTreeItem({
+    required this.node,
+    required this.level,
+    required this.onSelected,
+  });
+
+  @override
+  State<_FileTreeItem> createState() => _FileTreeItemState();
+}
+
+class _FileTreeItemState extends State<_FileTreeItem> {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        InkWell(
+          onTap: () {
+            if (widget.node.isFolder) {
+              setState(() {
+                widget.node.isExpanded = !widget.node.isExpanded;
+              });
+            } else {
+              widget.onSelected(widget.node);
+            }
+          },
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: 16.0 + (widget.level * 16.0),
+              top: 4,
+              bottom: 4,
+              right: 8,
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  widget.node.isFolder
+                      ? (widget.node.isExpanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_right)
+                      : Icons.description_outlined,
+                  size: 16,
+                  color: Colors.grey.shade600,
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  widget.node.isFolder ? Icons.folder : Icons.code,
+                  size: 16,
+                  color: widget.node.isFolder ? Colors.amber.shade700 : Colors.blue.shade700,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    widget.node.name,
+                    style: const TextStyle(fontSize: 13),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (widget.node.isFolder && widget.node.isExpanded && widget.node.children != null)
+          ...widget.node.children!.map((child) => _FileTreeItem(
+                node: child,
+                level: widget.level + 1,
+                onSelected: widget.onSelected,
+              )),
       ],
     );
   }

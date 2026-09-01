@@ -13,6 +13,8 @@ class AgentSimulatorService implements AgentExecutionService {
 
   @override
   Stream<AgentExecution> executeTask(Task task, Agent agent) async* {
+    final timestamp = DateTime.now().toIso8601String().substring(11, 19);
+    debugPrint('[$timestamp] AgentSimulator: Starting task ${task.id} with agent ${agent.name}');
     final executionId = 'exec_${DateTime.now().millisecondsSinceEpoch}';
     final startedAt = DateTime.now();
     
@@ -32,23 +34,23 @@ class AgentSimulatorService implements AgentExecutionService {
       ],
     );
 
-    await Future.delayed(const Duration(seconds: 2));
+    await Future.delayed(const Duration(milliseconds: 800)); // Reduced delay
 
     // 2. Running
     List<ExecutionLog> logs = [
       ExecutionLog(
         timestamp: DateTime.now(),
         message: 'Starting execution...',
-        details: 'Generating files: ${task.filesToChange.join(", ")}',
+        details: 'Generating files: ${task.filesToChange.isNotEmpty ? task.filesToChange.join(", ") : "project structure"}',
       ),
     ];
 
-    for (int i = 1; i <= 5; i++) {
-      await Future.delayed(Duration(seconds: 1 + _random.nextInt(2)));
+    for (int i = 1; i <= 3; i++) { // Reduced steps from 5 to 3
+      await Future.delayed(Duration(milliseconds: 500 + _random.nextInt(500)));
       
       logs.add(ExecutionLog(
         timestamp: DateTime.now(),
-        message: 'Step $i/5 in progress...',
+        message: 'Step $i/3 in progress...',
         details: 'Processing ${task.title} sub-components.',
       ));
 
@@ -63,7 +65,7 @@ class AgentSimulatorService implements AgentExecutionService {
     }
 
     // 3. Completing
-    await Future.delayed(const Duration(seconds: 1));
+    await Future.delayed(const Duration(milliseconds: 500));
     logs.add(ExecutionLog(
       timestamp: DateTime.now(),
       message: 'Task completed successfully.',
@@ -79,5 +81,6 @@ class AgentSimulatorService implements AgentExecutionService {
       completedAt: DateTime.now(),
       logs: logs,
     );
+    debugPrint('[$timestamp] AgentSimulator: Completed task ${task.id}');
   }
 }

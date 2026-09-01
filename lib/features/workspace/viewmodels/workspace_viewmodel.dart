@@ -57,44 +57,67 @@ class WorkspaceViewModel extends ChangeNotifier {
 
   void startDevelopment() async {
     debugPrint('WorkspaceViewModel: startDevelopment called');
-    if (_isDeveloping) return;
+    if (_isDeveloping) {
+      debugPrint('WorkspaceViewModel: Already developing, ignoring');
+      return;
+    }
     
     if (_project.developmentPlan == null || _project.developmentPlan!.phases.isEmpty) {
+      debugPrint('WorkspaceViewModel: Development plan is empty, generating default');
       _generateDefaultPlan();
+    } else {
+      debugPrint('WorkspaceViewModel: Using existing plan with ${_project.developmentPlan!.phases.length} phases');
     }
 
     _isDeveloping = true;
     _project = _project.copyWith(status: ProjectStatus.inProgress);
+    debugPrint('WorkspaceViewModel: Notifying listeners (Development Started)');
     notifyListeners();
 
     try {
       while (_isDeveloping) {
+        debugPrint('WorkspaceViewModel: Looking for next task...');
         final nextTask = _getNextPendingTask();
+        
         if (nextTask == null) {
+          debugPrint('WorkspaceViewModel: No more pending tasks. Development complete.');
           _isDeveloping = false;
           _project = _project.copyWith(status: ProjectStatus.completed);
           break;
         }
 
+        debugPrint('WorkspaceViewModel: Next task identified: ${nextTask.title} (${nextTask.id})');
         final agent = _assignAgentForTask(nextTask);
+        debugPrint('WorkspaceViewModel: Assigned agent ${agent.name} (${agent.type})');
         
+        debugPrint('WorkspaceViewModel: Starting stream for task ${nextTask.id}...');
         await for (final execution in _executionService.executeTask(nextTask, agent)) {
-          if (!_isDeveloping) break;
+          if (!_isDeveloping) {
+            debugPrint('WorkspaceViewModel: Development stopped by user mid-task');
+            break;
+          }
+          debugPrint('WorkspaceViewModel: Execution Update: ${execution.status}');
           _activeExecution = execution;
           notifyListeners();
         }
 
+        debugPrint('WorkspaceViewModel: Stream finished for task ${nextTask.id}');
         if (_activeExecution?.status == ExecutionStatus.completed) {
+          debugPrint('WorkspaceViewModel: Marking task ${nextTask.id} as DONE');
           _markTaskAsDone(nextTask.id);
+          debugPrint('WorkspaceViewModel: Simulating file generation for task ${nextTask.id}');
           _simulateFileGeneration(nextTask);
         } else {
+          debugPrint('WorkspaceViewModel: Task ${nextTask.id} did not reach completed status. Stopping loop.');
           _isDeveloping = false; 
         }
       }
-    } catch (e) {
-      debugPrint('WorkspaceViewModel: ERROR: $e');
+    } catch (e, stackTrace) {
+      debugPrint('WorkspaceViewModel: CRITICAL ERROR during development loop: $e');
+      debugPrint('WorkspaceViewModel: StackTrace: $stackTrace');
       _isDeveloping = false;
     } finally {
+      debugPrint('WorkspaceViewModel: Development loop exited. Cleaning up...');
       _isDeveloping = false;
       _activeExecution = null;
       notifyListeners();
@@ -223,12 +246,17 @@ class WorkspaceViewModel extends ChangeNotifier {
   }
 
   void _markTaskAsDone(String taskId) {
+    debugPrint('WorkspaceViewModel: _markTaskAsDone called for task $taskId');
     final plan = _project.developmentPlan;
-    if (plan == null) return;
+    if (plan == null) {
+      debugPrint('WorkspaceViewModel: Error - plan is null in _markTaskAsDone');
+      return;
+    }
 
     final updatedPhases = plan.phases.map((phase) {
       final updatedTasks = phase.tasks.map((task) {
         if (task.id == taskId) {
+          debugPrint('WorkspaceViewModel: Setting task $taskId status to DONE');
           return task.copyWith(status: TaskStatus.done);
         }
         return task;
@@ -238,6 +266,7 @@ class WorkspaceViewModel extends ChangeNotifier {
 
     final updatedPlan = plan.copyWith(phases: updatedPhases);
     _project = _project.copyWith(developmentPlan: updatedPlan);
+    debugPrint('WorkspaceViewModel: Project updated. Notifying listeners.');
     notifyListeners();
   }
 }
