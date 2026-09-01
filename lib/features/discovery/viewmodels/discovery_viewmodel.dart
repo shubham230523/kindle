@@ -5,6 +5,7 @@ import '../models/discovery_state.dart';
 import '../models/discovery_backend_result.dart';
 import '../../project/models/project.dart';
 import '../../project/models/requirement.dart';
+import '../../project/models/feature.dart';
 import '../../../core/services/discovery_service.dart';
 
 class DiscoveryViewModel extends ChangeNotifier {
@@ -103,23 +104,91 @@ class DiscoveryViewModel extends ChangeNotifier {
 
   void _generateSummaryFromBackend(DiscoveryBackendResult result) {
     // Generate a project based on the structured requirements from backend
+    
+    final List<Feature> features = [];
+    final List<Requirement> requirements = [];
+
+    for (var r in result.discoveredRequirements) {
+      if (r.toLowerCase().startsWith('feature:')) {
+        final featureText = r.substring(8).trim();
+        features.add(Feature(
+          id: DateTime.now().millisecondsSinceEpoch.toString() + features.length.toString(),
+          name: featureText.contains(':') ? featureText.split(':')[0].trim() : featureText,
+          description: featureText.contains(':') ? featureText.split(':')[1].trim() : featureText,
+          category: 'Core',
+        ));
+      } else {
+        requirements.add(Requirement(
+          id: DateTime.now().millisecondsSinceEpoch.toString() + requirements.length.toString(),
+          title: r.contains(':') ? r.split(':')[0].trim() : r,
+          description: r.contains(':') ? r.split(':').sublist(1).join(':').trim() : r,
+          priority: RequirementPriority.high,
+        ));
+      }
+    }
+
     final mockProject = Project(
       id: "proj_${DateTime.now().millisecondsSinceEpoch}",
       name: "Sparked App",
       description: result.understandingSummary,
       status: ProjectStatus.draft,
       createdAt: DateTime.now(),
-      requirements: result.discoveredRequirements.map((r) => Requirement(
-        id: DateTime.now().toString(),
-        title: r,
-        description: r,
-        priority: RequirementPriority.high,
-      )).toList(),
-      features: [], // Backend could return these too in the future
+      requirements: requirements,
+      features: features,
       userStories: [],
     );
 
     _state = _state.copyWith(generatedProject: mockProject);
+  }
+
+  void updateProjectName(String newName) {
+    if (_state.generatedProject != null) {
+      _state = _state.copyWith(
+        generatedProject: _state.generatedProject!.copyWith(name: newName),
+      );
+      notifyListeners();
+    }
+  }
+
+  void skipDiscovery() {
+    final result = DiscoveryBackendResult(
+      understandingSummary: 'A robust To-Do application for cross-device productivity. SyncTasks allows users to manage their daily schedules with real-time cloud synchronization between mobile and desktop.',
+      currentQuestion: null,
+      discoveredRequirements: [
+        'Target audience: Productive professionals and students',
+        'Problem: Difficulty keeping task lists updated across multiple devices.',
+        'Platforms: Android and iOS',
+        'Feature: Real-time Cloud Sync',
+        'Feature: Offline Task Creation',
+        'Feature: Push notifications for deadlines',
+        'Feature: Categorization and Priority Tagging',
+        'User Authentication: Multi-device session management',
+      ],
+      missingInformation: [],
+      confidence: 1.0,
+      isDiscoveryComplete: true,
+    );
+
+    _state = _state.copyWith(
+      stage: DiscoveryStage.summary,
+      progress: 1.0,
+      isAiTyping: false,
+    );
+    _generateSummaryFromBackend(result);
+    
+    // Explicitly update extra fields for dummy data
+    if (_state.generatedProject != null) {
+      _state = _state.copyWith(
+        generatedProject: _state.generatedProject!.copyWith(
+          name: "SyncTasks",
+          targetUsers: "Productive professionals and students",
+          problemStatement: "Difficulty keeping task lists updated across multiple devices.",
+          platforms: ["android", "ios"],
+        ),
+      );
+    }
+    
+    notifyListeners();
   }
 
   void clearError() {

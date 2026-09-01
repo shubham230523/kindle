@@ -106,42 +106,41 @@ class _ProjectSummaryScreenState extends State<ProjectSummaryScreen> {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: kMaxContentWidth),
-            child: Padding(
-              padding: const EdgeInsets.all(AppConstants.spacingMd),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  _HeaderSection(project: _project),
-                  const SizedBox(height: AppConstants.spacingLg),
-                  _OverviewSection(project: _project),
-                  const SizedBox(height: AppConstants.spacingLg),
-                  if (_project.platforms.isNotEmpty) ...[
-                    _PlatformsSection(project: _project),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Align(
+            alignment: Alignment.topCenter,
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: kMaxContentWidth),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppConstants.spacingMd,
+                  vertical: AppConstants.spacingMd,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _HeaderSection(project: _project),
+                    const SizedBox(height: AppConstants.spacingMd),
+                    _OverviewSection(project: _project),
+                    if (_project.platforms.isNotEmpty)
+                      _PlatformsSection(project: _project),
+                    if (_project.selectedTechnology != null)
+                      _TechSection(project: _project),
+                    if (_project.selectedBackend != null || _project.selectedDatabase != null)
+                      _BackendDatabaseSection(project: _project),
+                    _FeaturesSection(project: _project),
                     const SizedBox(height: AppConstants.spacingLg),
+                    _ActionSection(
+                      project: _project,
+                      onPlatformSelect: _handlePlatformSelection,
+                      onTechSelect: _handleTechSelection,
+                      onBackendSelect: _handleBackendSelection,
+                      onEdit: _handleEdit,
+                    ),
+                    const SizedBox(height: 100),
                   ],
-                  if (_project.selectedTechnology != null) ...[
-                    _TechSection(project: _project),
-                    const SizedBox(height: AppConstants.spacingLg),
-                  ],
-                  if (_project.selectedBackend != null || _project.selectedDatabase != null) ...[
-                    _BackendDatabaseSection(project: _project),
-                    const SizedBox(height: AppConstants.spacingLg),
-                  ],
-                  _FeaturesSection(project: _project),
-                  const SizedBox(height: AppConstants.spacingLg),
-                  _ActionSection(
-                    project: _project,
-                    onPlatformSelect: _handlePlatformSelection,
-                    onTechSelect: _handleTechSelection,
-                    onBackendSelect: _handleBackendSelection,
-                    onEdit: _handleEdit,
-                  ),
-                  const SizedBox(height: AppConstants.spacingXl),
-                ],
+                ),
               ),
             ),
           ),

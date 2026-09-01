@@ -67,6 +67,12 @@ class _DiscoveryChatScreenState extends State<DiscoveryChatScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Kindle Discovery'),
+        actions: [
+          TextButton(
+            onPressed: () => _viewModel.skipDiscovery(),
+            child: const Text('Skip'),
+          ),
+        ],
       ),
       body: ListenableBuilder(
         listenable: _viewModel,
@@ -108,7 +114,10 @@ class _DiscoveryChatScreenState extends State<DiscoveryChatScreen> {
                         }
 
                         if (state.generatedProject != null) {
-                          return DiscoverySummaryWidget(project: state.generatedProject!);
+                          return DiscoverySummaryWidget(
+                            project: state.generatedProject!,
+                            onNameChanged: (newName) => _viewModel.updateProjectName(newName),
+                          );
                         }
 
                         return const SizedBox.shrink();
