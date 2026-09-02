@@ -51,11 +51,14 @@ export class ArchitectureAgent {
 
       try {
         const result = JSON.parse(response.content) as ArchitectureBlueprint;
+        result.reasoning = response.reasoningDetails;
         return result;
       } catch (parseError) {
         const jsonMatch = response.content.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]) as ArchitectureBlueprint;
+          const result = JSON.parse(jsonMatch[0]) as ArchitectureBlueprint;
+          result.reasoning = response.reasoningDetails;
+          return result;
         }
         throw new Error('AI failed to provide a structured architecture blueprint');
       }

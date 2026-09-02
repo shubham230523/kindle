@@ -9,6 +9,8 @@ import '../../project/models/feature.dart';
 import '../../project/models/phase.dart';
 import '../../project/models/task.dart';
 import '../../project/models/development_plan.dart';
+import '../../project/models/architecture.dart';
+import '../../project/models/module.dart';
 import '../../../core/services/discovery_service.dart';
 
 class DiscoveryViewModel extends ChangeNotifier {
@@ -77,6 +79,7 @@ class DiscoveryViewModel extends ChangeNotifier {
     final aiMessage = ChatMessage(
       id: DateTime.now().toIso8601String(),
       content: result.currentQuestion ?? "Discovery complete!",
+      reasoningDetails: result.reasoning,
       sender: MessageSender.ai,
       timestamp: DateTime.now(),
     );
@@ -233,6 +236,15 @@ class DiscoveryViewModel extends ChangeNotifier {
         ],
       );
 
+      final defaultArchitecture = Architecture(
+        pattern: ArchitecturePattern.mvvm,
+        layers: ['Presentation', 'Domain', 'Data'],
+        modules: [
+          const Module(name: 'Core', responsibility: 'Shared logic and utilities'),
+          const Module(name: 'Features', responsibility: 'App functional modules'),
+        ],
+      );
+
       _state = _state.copyWith(
         generatedProject: _state.generatedProject!.copyWith(
           name: "SyncTasks",
@@ -240,6 +252,7 @@ class DiscoveryViewModel extends ChangeNotifier {
           problemStatement: "Difficulty keeping task lists updated across multiple devices.",
           platforms: ["android", "ios"],
           developmentPlan: dummyPlan,
+          architecture: defaultArchitecture,
         ),
       );
     }

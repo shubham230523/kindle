@@ -9,5 +9,5 @@ export interface DiscoveryResult {
 
 export interface DiscoveryRequest {
   idea: string;
-  previousHistory?: { role: 'user' | 'assistant'; content: string }[];
+  previousHistory?: { role: 'user' | 'assistant'; content: string; reasoning_details?: string }[];
 }

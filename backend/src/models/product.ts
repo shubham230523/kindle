@@ -17,6 +17,7 @@ export interface ProductSummary {
   coreFeatures: FeatureDefinition[];
   optionalFeatures: FeatureDefinition[];
   userStories: UserStoryDefinition[];
+  reasoning?: string;
 }
 
 export interface ProductRequest {

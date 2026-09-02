@@ -22,7 +22,8 @@ export class OllamaProvider implements AiProvider {
         stream: false,
         options: {
           temperature: request.temperature,
-          num_predict: request.maxTokens,
+          num_predict: request.maxTokens || 4096, // Increased default to prevent truncation
+          num_ctx: 8192, // Ensure context window is large enough
         },
       });
 

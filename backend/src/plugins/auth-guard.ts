@@ -1,9 +1,15 @@
 import { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify';
 
 export async function authGuard(request: FastifyRequest, reply: FastifyReply) {
+  const { env } = await import('../config/env.js');
   const authHeader = request.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (env.NODE_ENV === 'development') {
+      // Provide a default dev user for testing
+      request.user = { id: 'dev_user' };
+      return;
+    }
     return reply.status(401).send({
       error: 'Unauthorized',
       message: 'Missing or invalid authorization token',

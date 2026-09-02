@@ -17,6 +17,7 @@ export interface ArchitectureBlueprint {
   dependencies: ArchitectureDependency[];
   dataFlow: string;
   apiStrategy: string;
+  reasoning?: string;
 }
 
 export interface ArchitectureRequest {

@@ -18,6 +18,7 @@ export interface PlanPhase {
 
 export interface DevelopmentPlanResult {
   phases: PlanPhase[];
+  reasoning?: string;
 }
 
 export interface PlanningRequest {

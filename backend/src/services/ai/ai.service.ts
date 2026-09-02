@@ -1,13 +1,15 @@
 import { AiChatRequest, AiChatResponse, AiError } from '../../models/ai.js';
 import { AiProvider } from './ai-provider.interface.js';
 import { OllamaProvider } from './ollama.provider.js';
+import { OpenRouterProvider } from './openrouter.provider.js';
 
 export class AiService {
   private providers: Map<string, AiProvider> = new Map();
-  private defaultProvider: string = 'ollama';
+  private defaultProvider: string = 'openrouter';
 
   constructor() {
     this.registerProvider(new OllamaProvider());
+    this.registerProvider(new OpenRouterProvider());
   }
 
   registerProvider(provider: AiProvider) {

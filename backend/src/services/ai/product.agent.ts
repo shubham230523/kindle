@@ -55,11 +55,14 @@ export class ProductAgent {
 
       try {
         const result = JSON.parse(response.content) as ProductSummary;
+        result.reasoning = response.reasoningDetails;
         return result;
       } catch (parseError) {
         const jsonMatch = response.content.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]) as ProductSummary;
+          const result = JSON.parse(jsonMatch[0]) as ProductSummary;
+          result.reasoning = response.reasoningDetails;
+          return result;
         }
         throw new Error('AI failed to provide a structured product summary');
       }

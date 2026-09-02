@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/file_node.dart';
-import '../../project/models/project.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/utils/responsive_layout.dart';
 
@@ -69,7 +68,7 @@ class _GeneratedCodeScreenState extends State<GeneratedCodeScreen> {
                   Expanded(
                     child: ListView(
                       padding: EdgeInsets.zero,
-                      children: widget.fileSystem.map((node) => _FileTreeItem(
+                      children: widget.fileSystem.map<Widget>((node) => _FileTreeItem(
                         node: node,
                         level: 0,
                         onSelected: _openFile,
@@ -209,47 +208,45 @@ class _CodeViewer extends StatelessWidget {
                   child: ConstrainedBox(
                     constraints: BoxConstraints(minWidth: constraints.maxWidth),
                     child: SingleChildScrollView(
-                      child: IntrinsicHeight(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            // Line Numbers
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-                              color: Colors.grey.shade50,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: List.generate(
-                                  lines.length,
-                                  (i) => Text(
-                                    '${i + 1}',
-                                    style: const TextStyle(
-                                      fontFamily: 'monospace',
-                                      fontSize: 13,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                            const VerticalDivider(width: 1),
-                            // Content
-                            Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                                child: SelectableText(
-                                  file.content ?? '',
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Line Numbers
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                            color: Colors.grey.shade50,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: List.generate(
+                                lines.length,
+                                (i) => Text(
+                                  '${i + 1}',
                                   style: const TextStyle(
                                     fontFamily: 'monospace',
                                     fontSize: 13,
                                     height: 1.5,
-                                    color: Color(0xFF24292E),
+                                    color: Colors.grey,
                                   ),
                                 ),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                          Container(width: 1, color: Colors.grey.shade200),
+                          // Content
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                            child: SelectableText(
+                              file.content ?? '',
+                              style: const TextStyle(
+                                fontFamily: 'monospace',
+                                fontSize: 13,
+                                height: 1.5,
+                                color: Color(0xFF24292E),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -258,81 +255,6 @@ class _CodeViewer extends StatelessWidget {
             ),
           ),
         ),
-      ],
-    );
-  }
-}
-
-class _FileTreeItem extends StatefulWidget {
-  final FileNode node;
-  final int level;
-  final Function(FileNode) onSelected;
-
-  const _FileTreeItem({
-    required this.node,
-    required this.level,
-    required this.onSelected,
-  });
-
-  @override
-  State<_FileTreeItem> createState() => _FileTreeItemState();
-}
-
-class _FileTreeItemState extends State<_FileTreeItem> {
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        InkWell(
-          onTap: () {
-            if (widget.node.isFolder) {
-              setState(() {
-                widget.node.isExpanded = !widget.node.isExpanded;
-              });
-            } else {
-              widget.onSelected(widget.node);
-            }
-          },
-          child: Padding(
-            padding: EdgeInsets.only(
-              left: 16.0 + (widget.level * 16.0),
-              top: 4,
-              bottom: 4,
-              right: 8,
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  widget.node.isFolder
-                      ? (widget.node.isExpanded ? Icons.keyboard_arrow_down : Icons.keyboard_arrow_right)
-                      : Icons.description_outlined,
-                  size: 16,
-                  color: Colors.grey.shade600,
-                ),
-                const SizedBox(width: 8),
-                Icon(
-                  widget.node.isFolder ? Icons.folder : Icons.code,
-                  size: 16,
-                  color: widget.node.isFolder ? Colors.amber.shade700 : Colors.blue.shade700,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    widget.node.name,
-                    style: const TextStyle(fontSize: 13),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        if (widget.node.isFolder && widget.node.isExpanded && widget.node.children != null)
-          ...widget.node.children!.map((child) => _FileTreeItem(
-                node: child,
-                level: widget.level + 1,
-                onSelected: widget.onSelected,
-              )),
       ],
     );
   }

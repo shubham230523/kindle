@@ -19,6 +19,7 @@ class DiscoveryService {
           'previousHistory': history.map((m) => {
             'role': m.isUser ? 'user' : 'assistant',
             'content': m.content,
+            'reasoning_details': m.reasoningDetails,
           }).toList(),
         }),
       ).timeout(const Duration(seconds: 35));

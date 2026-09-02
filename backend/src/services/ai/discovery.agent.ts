@@ -32,7 +32,7 @@ export class DiscoveryAgent {
     }
   `;
 
-  async processIdea(idea: string, history: AiChatMessage[] = []): Promise<DiscoveryResult> {
+  async processIdea(idea: string, history: AiChatMessage[] = []): Promise<{ result: DiscoveryResult; reasoning?: string }> {
     const messages: AiChatMessage[] = [
       { role: 'system', content: this.systemPrompt },
       ...history,
@@ -42,21 +42,25 @@ export class DiscoveryAgent {
     try {
       const response = await aiService.chat({
         messages,
-        temperature: 0.2 // Lower temperature for more deterministic structured output
+        temperature: 0.2
       });
 
-      // Attempt to parse the JSON output from the AI
+      let result: DiscoveryResult;
       try {
-        const result = JSON.parse(response.content) as DiscoveryResult;
-        return result;
+        result = JSON.parse(response.content) as DiscoveryResult;
       } catch (parseError) {
-        // Fallback for LLMs that might wrap JSON in markdown or add text
         const jsonMatch = response.content.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]) as DiscoveryResult;
+          result = JSON.parse(jsonMatch[0]) as DiscoveryResult;
+        } else {
+          throw new Error('AI failed to provide a structured discovery response');
         }
-        throw new Error('AI failed to provide a structured discovery response');
       }
+
+      return {
+        result,
+        reasoning: response.reasoningDetails
+      };
     } catch (error: any) {
       throw new AiError(`Discovery Agent Error: ${error.message}`, 500, 'discovery-agent');
     }

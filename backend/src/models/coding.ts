@@ -8,6 +8,7 @@ export interface CodingResult {
   changes: FileModification[];
   explanation: string;
   confidence: number;
+  reasoning?: string;
 }
 
 export interface CodingRequest {

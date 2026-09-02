@@ -15,6 +15,9 @@ export class CodingAgent {
     5. Ensure all file paths are relative to the project "src" root.
     6. If a "DEBUG CONTEXT" is provided, you must fix the reported issue while still respecting the original task and architecture.
     7. Do NOT include extraneous text outside of the required JSON format.
+    8. FULL CODE MANDATORY: Every file in the "changes" array must contain the COMPLETE, production-ready source code.
+    9. NO PLACEHOLDERS: Do NOT use "TODO", "// implementation here", "...", or any other placeholders.
+    10. COMPILABLE: The code must be fully functional and ready to be compiled immediately.
 
     OUTPUT FORMAT:
     You must output your response as a valid JSON object with the following structure:
@@ -65,6 +68,7 @@ export class CodingAgent {
 
       try {
         const result = extractJson<CodingResult>(response.content);
+        result.reasoning = response.reasoningDetails;
 
         result.changes.forEach(change => {
           if (change.path.startsWith('/') || change.path.includes('..')) {

@@ -1,6 +1,7 @@
 export interface AiChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
+  reasoning_details?: string;
 }
 
 export interface AiChatRequest {
@@ -11,6 +12,7 @@ export interface AiChatRequest {
 
 export interface AiChatResponse {
   content: string;
+  reasoningDetails?: string;
   usage?: {
     promptTokens: number;
     completionTokens: number;

@@ -62,11 +62,14 @@ export class PlanningAgent {
 
       try {
         const result = JSON.parse(response.content) as DevelopmentPlanResult;
+        result.reasoning = response.reasoningDetails;
         return result;
       } catch (parseError) {
         const jsonMatch = response.content.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]) as DevelopmentPlanResult;
+          const result = JSON.parse(jsonMatch[0]) as DevelopmentPlanResult;
+          result.reasoning = response.reasoningDetails;
+          return result;
         }
         throw new Error('AI failed to provide a structured development plan');
       }

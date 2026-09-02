@@ -40,6 +40,7 @@ class AgentExecution {
   final DateTime startedAt;
   final DateTime? completedAt;
   final List<ExecutionLog> logs;
+  final dynamic result; // Stores CodingResult or other agent outputs
 
   const AgentExecution({
     required this.id,
@@ -49,6 +50,7 @@ class AgentExecution {
     required this.startedAt,
     this.completedAt,
     this.logs = const [],
+    this.result,
   });
 
   AgentExecution copyWith({
@@ -59,6 +61,7 @@ class AgentExecution {
     DateTime? startedAt,
     DateTime? completedAt,
     List<ExecutionLog>? logs,
+    dynamic result,
   }) {
     return AgentExecution(
       id: id ?? this.id,
@@ -68,6 +71,7 @@ class AgentExecution {
       startedAt: startedAt ?? this.startedAt,
       completedAt: completedAt ?? this.completedAt,
       logs: logs ?? this.logs,
+      result: result ?? this.result,
     );
   }
 
@@ -80,6 +84,7 @@ class AgentExecution {
       'startedAt': startedAt.toIso8601String(),
       'completedAt': completedAt?.toIso8601String(),
       'logs': logs.map((x) => x.toMap()).toList(),
+      'result': result,
     };
   }
 
@@ -97,6 +102,7 @@ class AgentExecution {
       logs: List<ExecutionLog>.from(
         (map['logs'] as List? ?? []).map((x) => ExecutionLog.fromMap(x)),
       ),
+      result: map['result'],
     );
   }
 }

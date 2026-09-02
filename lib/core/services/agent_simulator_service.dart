@@ -1,18 +1,31 @@
 import 'dart:async';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import '../../features/project/models/agent.dart';
 import '../../features/project/models/agent_execution.dart';
 import '../../features/project/models/task.dart';
 
+import '../../features/project/models/project.dart';
+
 abstract class AgentExecutionService {
-  Stream<AgentExecution> executeTask(Task task, Agent agent);
+  Stream<AgentExecution> executeTask(
+    Task task,
+    Agent agent, {
+    required Project project,
+    List<String> existingFiles = const [],
+  });
 }
 
 class AgentSimulatorService implements AgentExecutionService {
   final _random = Random();
 
   @override
-  Stream<AgentExecution> executeTask(Task task, Agent agent) async* {
+  Stream<AgentExecution> executeTask(
+    Task task,
+    Agent agent, {
+    required Project project,
+    List<String> existingFiles = const [],
+  }) async* {
     final timestamp = DateTime.now().toIso8601String().substring(11, 19);
     debugPrint('[$timestamp] AgentSimulator: Starting task ${task.id} with agent ${agent.name}');
     final executionId = 'exec_${DateTime.now().millisecondsSinceEpoch}';

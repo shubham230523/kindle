@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../viewmodels/workspace_viewmodel.dart';
 import '../../../core/services/agent_simulator_service.dart';
+import '../../../core/services/backend_agent_service.dart';
 import '../../project/models/project.dart';
 import 'project_dashboard_screen.dart';
 import 'agent_activity_screen.dart';
@@ -34,7 +35,7 @@ class _ProjectWorkspaceShellState extends State<ProjectWorkspaceShell> {
   @override
   void initState() {
     super.initState();
-    _viewModel = WorkspaceViewModel(widget.project, AgentSimulatorService());
+    _viewModel = WorkspaceViewModel(widget.project, BackendAgentService());
   }
 
   final List<_WorkspaceDestination> _destinations = [

@@ -7,8 +7,11 @@ import '../../../core/services/agent_simulator_service.dart';
 
 import '../../project/models/phase.dart';
 import '../../project/models/development_plan.dart';
+import '../../project/models/architecture.dart';
+import '../../project/models/module.dart';
 
 import '../models/file_node.dart';
+import '../../project/models/coding_result.dart';
 
 class WorkspaceViewModel extends ChangeNotifier {
   final AgentExecutionService _executionService;
@@ -91,7 +94,14 @@ class WorkspaceViewModel extends ChangeNotifier {
         debugPrint('WorkspaceViewModel: Assigned agent ${agent.name} (${agent.type})');
         
         debugPrint('WorkspaceViewModel: Starting stream for task ${nextTask.id}...');
-        await for (final execution in _executionService.executeTask(nextTask, agent)) {
+        final existingFilePaths = _getAllFilePaths(_virtualFileSystem, '');
+        
+        await for (final execution in _executionService.executeTask(
+          nextTask,
+          agent,
+          project: _project,
+          existingFiles: existingFilePaths,
+        )) {
           if (!_isDeveloping) {
             debugPrint('WorkspaceViewModel: Development stopped by user mid-task');
             break;
@@ -105,8 +115,14 @@ class WorkspaceViewModel extends ChangeNotifier {
         if (_activeExecution?.status == ExecutionStatus.completed) {
           debugPrint('WorkspaceViewModel: Marking task ${nextTask.id} as DONE');
           _markTaskAsDone(nextTask.id);
-          debugPrint('WorkspaceViewModel: Simulating file generation for task ${nextTask.id}');
-          _simulateFileGeneration(nextTask);
+          
+          if (_activeExecution?.result is CodingResult) {
+            debugPrint('WorkspaceViewModel: Applying real file generation for task ${nextTask.id}');
+            _applyCodingResult(_activeExecution!.result as CodingResult);
+          } else {
+            debugPrint('WorkspaceViewModel: No coding result found, falling back to simulation');
+            _simulateFileGeneration(nextTask);
+          }
         } else {
           debugPrint('WorkspaceViewModel: Task ${nextTask.id} did not reach completed status. Stopping loop.');
           _isDeveloping = false; 
@@ -121,6 +137,91 @@ class WorkspaceViewModel extends ChangeNotifier {
       _isDeveloping = false;
       _activeExecution = null;
       notifyListeners();
+    }
+  }
+
+  List<String> _getAllFilePaths(List<FileNode> nodes, String currentPath) {
+    List<String> paths = [];
+    for (final node in nodes) {
+      final nodePath = currentPath.isEmpty ? node.name : '$currentPath/${node.name}';
+      if (node.isFolder) {
+        paths.addAll(_getAllFilePaths(node.children ?? [], nodePath));
+      } else {
+        paths.add(nodePath);
+      }
+    }
+    return paths;
+  }
+
+  void _applyCodingResult(CodingResult result) {
+    for (final change in result.changes) {
+      if (change.type == 'delete') {
+        _removeFileFromSystem(change.path);
+      } else {
+        _addOrUpdateFileInSystem(change.path, change.content);
+      }
+    }
+    notifyListeners();
+  }
+
+  void _addOrUpdateFileInSystem(String path, String content) {
+    final parts = path.split('/');
+    List<FileNode> currentLevel = _virtualFileSystem;
+    
+    for (int i = 0; i < parts.length; i++) {
+      final part = parts[i];
+      final isLast = i == parts.length - 1;
+      
+      final existingIndex = currentLevel.indexWhere((n) => n.name == part);
+      
+      if (isLast) {
+        if (existingIndex != -1) {
+          // Update existing file
+          final oldNode = currentLevel[existingIndex];
+          currentLevel[existingIndex] = FileNode(
+            name: part,
+            content: content,
+            isFolder: false,
+            isExpanded: oldNode.isExpanded,
+          );
+        } else {
+          // Create new file
+          currentLevel.add(FileNode(name: part, content: content));
+        }
+      } else {
+        if (existingIndex != -1) {
+          if (!currentLevel[existingIndex].isFolder) {
+            // Error: File exists where folder expected
+            return;
+          }
+          currentLevel = currentLevel[existingIndex].children!;
+        } else {
+          // Create new folder
+          final newFolder = FileNode(name: part, isFolder: true, children: [], isExpanded: true);
+          currentLevel.add(newFolder);
+          currentLevel = newFolder.children!;
+        }
+      }
+    }
+  }
+
+  void _removeFileFromSystem(String path) {
+    final parts = path.split('/');
+    List<FileNode> currentLevel = _virtualFileSystem;
+    
+    for (int i = 0; i < parts.length; i++) {
+      final part = parts[i];
+      final isLast = i == parts.length - 1;
+      
+      final existingIndex = currentLevel.indexWhere((n) => n.name == part);
+      if (existingIndex == -1) return;
+      
+      if (isLast) {
+        currentLevel.removeAt(existingIndex);
+      } else {
+        if (!currentLevel[existingIndex].isFolder) return;
+        currentLevel = currentLevel[existingIndex].children!;
+      }
     }
   }
 
@@ -173,6 +274,17 @@ class WorkspaceViewModel extends ChangeNotifier {
 
   void _generateDefaultPlan() {
     final projectId = _project.id;
+
+    // Define a default architecture if missing
+    final defaultArchitecture = Architecture(
+      pattern: ArchitecturePattern.mvvm,
+      layers: ['Presentation', 'Domain', 'Data'],
+      modules: [
+        const Module(name: 'Core', responsibility: 'Shared logic and utilities'),
+        const Module(name: 'Features', responsibility: 'App functional modules'),
+      ],
+    );
+
     final dummyPlan = DevelopmentPlan(
       id: 'dp_${DateTime.now().millisecondsSinceEpoch}',
       projectId: projectId,
@@ -208,7 +320,10 @@ class WorkspaceViewModel extends ChangeNotifier {
         ),
       ],
     );
-    _project = _project.copyWith(developmentPlan: dummyPlan);
+    _project = _project.copyWith(
+      developmentPlan: dummyPlan,
+      architecture: _project.architecture ?? defaultArchitecture,
+    );
     notifyListeners();
   }
 

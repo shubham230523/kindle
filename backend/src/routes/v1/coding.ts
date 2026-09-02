@@ -5,13 +5,28 @@ import { storageService } from '../../services/storage/storage.service.js';
 import { ProjectState } from '../../models/pipeline.js';
 import { CodingRequest, FileModification } from '../../models/coding.js';
 import { authGuard } from '../../plugins/auth-guard.js';
+import { env } from '../../config/env.js';
 
 export default async function codingRoutes(fastify: FastifyInstance) {
 
   async function checkOwnership(projectId: string, userId: string) {
     const project = await storageService.load<ProjectState>('projects', projectId);
-    if (!project) throw new Error('Project not found');
-    if (project.userId !== userId) throw new Error('Unauthorized');
+
+    if (!project) {
+      if (env.NODE_ENV === 'development') {
+        // In dev, allow processing even if project metadata is missing from DB
+        return;
+      }
+      const error: any = new Error('Project not found');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (project.userId !== userId && env.NODE_ENV !== 'development') {
+      const error: any = new Error('Unauthorized');
+      error.statusCode = 403;
+      throw error;
+    }
   }
 
   fastify.post('/coding/execute', { preHandler: [authGuard] }, async (request, reply) => {
@@ -19,9 +34,14 @@ export default async function codingRoutes(fastify: FastifyInstance) {
     const userId = request.user!.id;
 
     if (!codingRequest.projectId || !codingRequest.task || !codingRequest.architecture) {
+      const missing = [];
+      if (!codingRequest.projectId) missing.push('projectId');
+      if (!codingRequest.task) missing.push('task');
+      if (!codingRequest.architecture) missing.push('architecture');
+
       return reply.status(400).send({
         error: 'Bad Request',
-        message: 'Project ID, Task, and Architecture are required',
+        message: `Missing required fields: ${missing.join(', ')}`,
       });
     }
 
@@ -30,8 +50,10 @@ export default async function codingRoutes(fastify: FastifyInstance) {
       const result = await codingAgent.executeTask(codingRequest);
       return result;
     } catch (error: any) {
-      return reply.status(error.message === 'Unauthorized' ? 403 : 500).send({
-        error: error.message,
+      const statusCode = error.statusCode || 500;
+      return reply.status(statusCode).send({
+        error: error.name || 'CodingError',
+        message: error.message,
       });
     }
   });
