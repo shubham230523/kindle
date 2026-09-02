@@ -1,4 +1,5 @@
 import { aiService } from './ai.service.js';
+import { extractJson } from './ai-utils.js';
 import { AiError } from '../../models/ai.js';
 export class DebugAgent {
     async analyzeFailure(projectId, errorOutput, taskDescription) {
@@ -25,7 +26,18 @@ export class DebugAgent {
                 ],
                 temperature: 0.1
             });
-            const result = JSON.parse(response.content);
+            let result;
+            try {
+                result = extractJson(response.content);
+            }
+            catch (e) {
+                if (response.reasoning_details) {
+                    result = extractJson(response.reasoning_details);
+                }
+                else {
+                    throw e;
+                }
+            }
             return result;
         }
         catch (error) {

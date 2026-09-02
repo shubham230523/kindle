@@ -41,13 +41,19 @@ export default async function codingRoutes(fastify: FastifyInstance) {
     try {
       await checkOwnership(codingRequest.projectId, userId);
 
-      // Set headers for Server-Sent Events (SSE)
-      reply.raw.setHeader('Content-Type', 'text/event-stream');
-      reply.raw.setHeader('Cache-Control', 'no-cache');
-      reply.raw.setHeader('Connection', 'keep-alive');
-      reply.raw.setHeader('Access-Control-Allow-Origin', '*');
+      let headersSent = false;
 
       const result = await codingAgent.executeTask(codingRequest, (chunk) => {
+        if (!headersSent) {
+          // Set headers for Server-Sent Events (SSE)
+          reply.raw.setHeader('Content-Type', 'text/event-stream');
+          reply.raw.setHeader('Cache-Control', 'no-cache');
+          reply.raw.setHeader('Connection', 'keep-alive');
+          reply.raw.setHeader('Access-Control-Allow-Origin', '*');
+          reply.raw.flushHeaders();
+          headersSent = true;
+        }
+
         // Stream chunks to the client
         const data = JSON.stringify({ type: 'chunk', content: chunk });
         reply.raw.write(`data: ${data}\n\n`);
@@ -59,7 +65,13 @@ export default async function codingRoutes(fastify: FastifyInstance) {
         });
       });
 
-      // Send the final result
+      if (!headersSent) {
+        // If we haven't sent headers yet (agent finished very quickly or without chunks),
+        // return as standard JSON to avoid "object type" error on raw write
+        return result;
+      }
+
+      // Send the final result as the last SSE event
       const finalData = JSON.stringify({ type: 'result', content: result });
       reply.raw.write(`data: ${finalData}\n\n`);
       reply.raw.end();
@@ -68,13 +80,18 @@ export default async function codingRoutes(fastify: FastifyInstance) {
       fastify.log.error(error);
       const errorData = JSON.stringify({ type: 'error', message: error.message });
 
-      if (!reply.raw.writableEnded) {
-        if (!reply.raw.headersSent) {
-          reply.status(error.statusCode || 500).send({ error: error.message });
-        } else {
-          reply.raw.write(`data: ${errorData}\n\n`);
-          reply.raw.end();
-        }
+      if (reply.raw.writableEnded) return;
+
+      // If headers weren't sent on the raw response, we can use Fastify's standard reply
+      if (!reply.raw.headersSent) {
+        return reply.status(error.statusCode || 500).send({
+          error: error.name || 'CodingError',
+          message: error.message
+        });
+      } else {
+        // If we already started the SSE stream, send the error as an event
+        reply.raw.write(`data: ${errorData}\n\n`);
+        reply.raw.end();
       }
     }
   });

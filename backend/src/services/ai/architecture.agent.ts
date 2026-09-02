@@ -53,8 +53,10 @@ export class ArchitectureAgent {
       let result: ArchitectureBlueprint;
       try {
         result = extractJson<ArchitectureBlueprint>(response.content);
-      } catch (e) {
+      } catch (e: any) {
+        console.error(`Architecture Agent: Primary extraction failed: ${e.message}`);
         if (response.reasoning_details) {
+          console.log('Architecture Agent: Attempting fallback to reasoning_details...');
           result = extractJson<ArchitectureBlueprint>(response.reasoning_details);
         } else {
           throw e;

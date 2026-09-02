@@ -1,5 +1,6 @@
 import { aiService } from './ai.service.js';
 import { AiError } from '../../models/ai.js';
+import { extractJson } from './ai-utils.js';
 export class ProductAgent {
     systemPrompt = `
     You are the Kindle Product Agent. Your goal is to take a structured discovery output and transform it into a professional product specification.
@@ -47,19 +48,24 @@ export class ProductAgent {
                 messages,
                 temperature: 0.3
             });
+            let result;
             try {
-                const result = JSON.parse(response.content);
-                return result;
+                result = extractJson(response.content);
             }
-            catch (parseError) {
-                const jsonMatch = response.content.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    return JSON.parse(jsonMatch[0]);
+            catch (e) {
+                if (response.reasoning_details) {
+                    result = extractJson(response.reasoning_details);
                 }
-                throw new Error('AI failed to provide a structured product summary');
+                else {
+                    throw e;
+                }
             }
+            result.reasoning = response.reasoning_details;
+            return result;
         }
         catch (error) {
+            if (error instanceof AiError)
+                throw error;
             throw new AiError(`Product Agent Error: ${error.message}`, 500, 'product-agent');
         }
     }

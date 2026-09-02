@@ -64,8 +64,10 @@ export class PlanningAgent {
       let result: DevelopmentPlanResult;
       try {
         result = extractJson<DevelopmentPlanResult>(response.content);
-      } catch (e) {
+      } catch (e: any) {
+        console.error(`Planning Agent: Primary extraction failed: ${e.message}`);
         if (response.reasoning_details) {
+          console.log('Planning Agent: Attempting fallback to reasoning_details...');
           result = extractJson<DevelopmentPlanResult>(response.reasoning_details);
         } else {
           throw e;

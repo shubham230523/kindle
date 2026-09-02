@@ -53,10 +53,13 @@ export function extractJson<T>(content: string | null | undefined): T {
     const lastBraceIndex = content.lastIndexOf('}');
     if (lastBraceIndex > firstBraceIndex) {
       let sanitized = content.substring(firstBraceIndex, lastBraceIndex + 1);
-      // Replace unescaped newlines inside quotes
-      sanitized = sanitized.replace(/"([^"]*)"/g, (match, p1) => {
+
+      // Replace unescaped newlines inside quotes, while respecting escaped quotes
+      // This is a more complex regex to handle basic escape sequences
+      sanitized = sanitized.replace(/"((?:[^"\\]|\\.)*)"/g, (match, p1) => {
         return '"' + p1.replace(/\n/g, '\\n').replace(/\r/g, '\\r') + '"';
       });
+
       try {
         const parsed = JSON.parse(sanitized);
         if (parsed !== null && typeof parsed === 'object') {

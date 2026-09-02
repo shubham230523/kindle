@@ -72,16 +72,21 @@ export class CodingAgent {
 
         try {
           result = extractJson<CodingResult>(response.content);
-        } catch (initialError) {
+        } catch (initialError: any) {
+          console.error(`Coding Agent: Primary JSON extraction failed: ${initialError.message}`);
+
           // If content is empty but we have reasoning, try extracting from reasoning
-          // (some models occasionally dump JSON there if they get confused)
           if (response.reasoning_details) {
             try {
+              console.log('Coding Agent: Attempting fallback to reasoning_details...');
               result = extractJson<CodingResult>(response.reasoning_details);
             } catch (innerError) {
-              throw initialError; // Re-throw the original error if reasoning also fails
+              console.error('Coding Agent: Reasoning fallback also failed.');
+              throw initialError;
             }
           } else {
+            // Log a snippet of the failed content for debugging
+            console.error('Coding Agent: No reasoning_details available. Content snippet:', response.content?.substring(0, 500));
             throw initialError;
           }
         }

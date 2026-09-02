@@ -1,5 +1,6 @@
 import { aiService } from './ai.service.js';
 import { AiError } from '../../models/ai.js';
+import { extractJson } from './ai-utils.js';
 export class DiscoveryAgent {
     systemPrompt = `
     You are the Kindle Discovery Agent. Your goal is to understand a user's application idea and help them refine it into a structured set of requirements.
@@ -38,23 +39,28 @@ export class DiscoveryAgent {
         try {
             const response = await aiService.chat({
                 messages,
-                temperature: 0.2 // Lower temperature for more deterministic structured output
+                temperature: 0.2
             });
-            // Attempt to parse the JSON output from the AI
+            let result;
             try {
-                const result = JSON.parse(response.content);
-                return result;
+                result = extractJson(response.content);
             }
-            catch (parseError) {
-                // Fallback for LLMs that might wrap JSON in markdown or add text
-                const jsonMatch = response.content.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    return JSON.parse(jsonMatch[0]);
+            catch (e) {
+                if (response.reasoning_details) {
+                    result = extractJson(response.reasoning_details);
                 }
-                throw new Error('AI failed to provide a structured discovery response');
+                else {
+                    throw e;
+                }
             }
+            return {
+                result,
+                reasoning: response.reasoning_details
+            };
         }
         catch (error) {
+            if (error instanceof AiError)
+                throw error;
             throw new AiError(`Discovery Agent Error: ${error.message}`, 500, 'discovery-agent');
         }
     }

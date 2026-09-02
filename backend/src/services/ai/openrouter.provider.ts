@@ -68,6 +68,9 @@ export class OpenRouterProvider implements AiProvider {
 
           try {
             const data = JSON.parse(dataStr);
+            if (data.error) {
+              throw new Error(`OpenRouter Stream Error: ${data.error.message || JSON.stringify(data.error)}`);
+            }
             if (data.choices && data.choices[0].delta) {
               const delta = data.choices[0].delta;
 

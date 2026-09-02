@@ -10,7 +10,7 @@ export class OllamaProvider {
             timeout: 30000, // 30 seconds
         });
     }
-    async chat(request) {
+    async chat(request, onChunk) {
         try {
             const response = await this.client.post('', {
                 model: env.OLLAMA_MODEL,
@@ -18,10 +18,14 @@ export class OllamaProvider {
                 stream: false,
                 options: {
                     temperature: request.temperature,
-                    num_predict: request.maxTokens,
+                    num_predict: request.maxTokens || 4096, // Increased default to prevent truncation
+                    num_ctx: 8192, // Ensure context window is large enough
                 },
             });
             const { message, prompt_eval_count, eval_count } = response.data;
+            if (!message || message.content === null || message.content === undefined) {
+                throw new Error('Ollama returned empty or null content.');
+            }
             return {
                 content: message.content,
                 usage: {

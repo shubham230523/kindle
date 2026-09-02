@@ -1,5 +1,6 @@
 import { aiService } from './ai.service.js';
 import { AiError } from '../../models/ai.js';
+import { extractJson } from './ai-utils.js';
 export class TechnologyAgent {
     systemPrompt = `
     You are the Kindle Technology Agent. Your goal is to recommend the most suitable technology stack for a given application based on its requirements and target platforms.
@@ -41,19 +42,23 @@ export class TechnologyAgent {
                 messages,
                 temperature: 0.2
             });
+            let result;
             try {
-                const result = JSON.parse(response.content);
-                return result;
+                result = extractJson(response.content);
             }
-            catch (parseError) {
-                const jsonMatch = response.content.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    return JSON.parse(jsonMatch[0]);
+            catch (e) {
+                if (response.reasoning_details) {
+                    result = extractJson(response.reasoning_details);
                 }
-                throw new Error('AI failed to provide a structured technology recommendation');
+                else {
+                    throw e;
+                }
             }
+            return result;
         }
         catch (error) {
+            if (error instanceof AiError)
+                throw error;
             throw new AiError(`Technology Agent Error: ${error.message}`, 500, 'technology-agent');
         }
     }

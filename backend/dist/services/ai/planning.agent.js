@@ -1,5 +1,6 @@
 import { aiService } from './ai.service.js';
 import { AiError } from '../../models/ai.js';
+import { extractJson } from './ai-utils.js';
 export class PlanningAgent {
     systemPrompt = `
     You are the Kindle Planning Agent. Your goal is to create a detailed, dependency-aware development plan for an application.
@@ -54,19 +55,26 @@ export class PlanningAgent {
                 messages,
                 temperature: 0.2
             });
+            let result;
             try {
-                const result = JSON.parse(response.content);
-                return result;
+                result = extractJson(response.content);
             }
-            catch (parseError) {
-                const jsonMatch = response.content.match(/\{[\s\S]*\}/);
-                if (jsonMatch) {
-                    return JSON.parse(jsonMatch[0]);
+            catch (e) {
+                console.error(`Planning Agent: Primary extraction failed: ${e.message}`);
+                if (response.reasoning_details) {
+                    console.log('Planning Agent: Attempting fallback to reasoning_details...');
+                    result = extractJson(response.reasoning_details);
                 }
-                throw new Error('AI failed to provide a structured development plan');
+                else {
+                    throw e;
+                }
             }
+            result.reasoning = response.reasoning_details;
+            return result;
         }
         catch (error) {
+            if (error instanceof AiError)
+                throw error;
             throw new AiError(`Planning Agent Error: ${error.message}`, 500, 'planning-agent');
         }
     }

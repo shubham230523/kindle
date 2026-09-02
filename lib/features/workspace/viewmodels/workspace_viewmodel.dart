@@ -347,16 +347,28 @@ class WorkspaceViewModel extends ChangeNotifier {
   }
 
   Agent _assignAgentForTask(Task task) {
-    // Basic assignment logic based on phase or task title
+    // Determine agent based on the task description or title
+    final title = task.title.toLowerCase();
+    final desc = task.description.toLowerCase();
+    
+    if (title.contains('setup') || title.contains('bootstrap') || title.contains('initialize') || 
+        desc.contains('create project') || desc.contains('directory structure')) {
+      return _agents.firstWhere((a) => a.type == AgentType.developer, orElse: () => _agents[3]); // Coding Agent
+    }
+
+    if (title.contains('ui') || title.contains('screen') || title.contains('crud') || title.contains('feature') ||
+        desc.contains('implement') || desc.contains('logic') || desc.contains('code')) {
+      return _agents.firstWhere((a) => a.type == AgentType.developer, orElse: () => _agents[3]); // Coding Agent
+    }
+
+    if (title.contains('test') || desc.contains('verify')) {
+      return _agents.firstWhere((a) => a.type == AgentType.tester, orElse: () => _agents[4]); // Testing Agent
+    }
+
     if (task.phaseId == 'p1' || task.phaseId == 'p2') {
       return _agents.firstWhere((a) => a.type == AgentType.architect, orElse: () => _agents[2]); // Architecture
     }
-    if (task.phaseId == 'p4') {
-      return _agents.firstWhere((a) => a.type == AgentType.developer, orElse: () => _agents[3]); // Coding
-    }
-    if (task.phaseId == 'p5') {
-      return _agents.firstWhere((a) => a.type == AgentType.tester, orElse: () => _agents[4]); // Testing
-    }
+    
     return _agents[3]; // Default to Coding Agent
   }
 
