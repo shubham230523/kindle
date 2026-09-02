@@ -2,6 +2,8 @@
 
 ### AI-Powered Application Creation Platform
 
+[![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen?style=for-the-badge)](https://shubham230523.github.io/kindle/)
+
 **Kindle** is an AI-powered application builder that transforms an idea into a complete software project.
 
 Users describe what they want to build, and Kindle uses AI agents to understand the requirements, ask the right questions, recommend technologies, create an implementation plan, generate the application, build it, test it, and iteratively fix issues.
