@@ -14,7 +14,7 @@ export class OllamaProvider implements AiProvider {
     });
   }
 
-  async chat(request: AiChatRequest): Promise<AiChatResponse> {
+  async chat(request: AiChatRequest, onChunk?: (chunk: string) => void): Promise<AiChatResponse> {
     try {
       const response = await this.client.post('', {
         model: env.OLLAMA_MODEL,
@@ -28,6 +28,10 @@ export class OllamaProvider implements AiProvider {
       });
 
       const { message, prompt_eval_count, eval_count } = response.data;
+
+      if (!message || message.content === null || message.content === undefined) {
+        throw new Error('Ollama returned empty or null content.');
+      }
 
       return {
         content: message.content,

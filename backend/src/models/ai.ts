@@ -12,7 +12,7 @@ export interface AiChatRequest {
 
 export interface AiChatResponse {
   content: string;
-  reasoningDetails?: string;
+  reasoning_details?: string;
   usage?: {
     promptTokens: number;
     completionTokens: number;

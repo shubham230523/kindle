@@ -1,6 +1,7 @@
 import { aiService } from './ai.service.js';
 import { AiChatMessage, AiError } from '../../models/ai.js';
 import { DiscoveryResult } from '../../models/discovery.js';
+import { extractJson } from './ai-utils.js';
 
 export class DiscoveryAgent {
   private readonly systemPrompt = `
@@ -47,21 +48,21 @@ export class DiscoveryAgent {
 
       let result: DiscoveryResult;
       try {
-        result = JSON.parse(response.content) as DiscoveryResult;
-      } catch (parseError) {
-        const jsonMatch = response.content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          result = JSON.parse(jsonMatch[0]) as DiscoveryResult;
+        result = extractJson<DiscoveryResult>(response.content);
+      } catch (e) {
+        if (response.reasoning_details) {
+          result = extractJson<DiscoveryResult>(response.reasoning_details);
         } else {
-          throw new Error('AI failed to provide a structured discovery response');
+          throw e;
         }
       }
 
       return {
         result,
-        reasoning: response.reasoningDetails
+        reasoning: response.reasoning_details
       };
     } catch (error: any) {
+      if (error instanceof AiError) throw error;
       throw new AiError(`Discovery Agent Error: ${error.message}`, 500, 'discovery-agent');
     }
   }

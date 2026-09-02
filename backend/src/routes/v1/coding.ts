@@ -1,5 +1,6 @@
 import { FastifyInstance } from 'fastify';
 import { codingAgent } from '../../services/ai/coding.agent.js';
+import { socketService } from '../../services/workspace/socket.service.js';
 import { codeChangeService } from '../../services/workspace/code-change.service.js';
 import { storageService } from '../../services/storage/storage.service.js';
 import { ProjectState } from '../../models/pipeline.js';
@@ -34,27 +35,47 @@ export default async function codingRoutes(fastify: FastifyInstance) {
     const userId = request.user!.id;
 
     if (!codingRequest.projectId || !codingRequest.task || !codingRequest.architecture) {
-      const missing = [];
-      if (!codingRequest.projectId) missing.push('projectId');
-      if (!codingRequest.task) missing.push('task');
-      if (!codingRequest.architecture) missing.push('architecture');
-
-      return reply.status(400).send({
-        error: 'Bad Request',
-        message: `Missing required fields: ${missing.join(', ')}`,
-      });
+      return reply.status(400).send({ error: 'Missing required fields' });
     }
 
     try {
       await checkOwnership(codingRequest.projectId, userId);
-      const result = await codingAgent.executeTask(codingRequest);
-      return result;
-    } catch (error: any) {
-      const statusCode = error.statusCode || 500;
-      return reply.status(statusCode).send({
-        error: error.name || 'CodingError',
-        message: error.message,
+
+      // Set headers for Server-Sent Events (SSE)
+      reply.raw.setHeader('Content-Type', 'text/event-stream');
+      reply.raw.setHeader('Cache-Control', 'no-cache');
+      reply.raw.setHeader('Connection', 'keep-alive');
+      reply.raw.setHeader('Access-Control-Allow-Origin', '*');
+
+      const result = await codingAgent.executeTask(codingRequest, (chunk) => {
+        // Stream chunks to the client
+        const data = JSON.stringify({ type: 'chunk', content: chunk });
+        reply.raw.write(`data: ${data}\n\n`);
+
+        // Also keep emitting via WebSocket for other listeners
+        socketService.emit(codingRequest.projectId, 'AGENT_STREAM_CHUNK', {
+          taskId: codingRequest.task.id,
+          chunk
+        });
       });
+
+      // Send the final result
+      const finalData = JSON.stringify({ type: 'result', content: result });
+      reply.raw.write(`data: ${finalData}\n\n`);
+      reply.raw.end();
+
+    } catch (error: any) {
+      fastify.log.error(error);
+      const errorData = JSON.stringify({ type: 'error', message: error.message });
+
+      if (!reply.raw.writableEnded) {
+        if (!reply.raw.headersSent) {
+          reply.status(error.statusCode || 500).send({ error: error.message });
+        } else {
+          reply.raw.write(`data: ${errorData}\n\n`);
+          reply.raw.end();
+        }
+      }
     }
   });
 

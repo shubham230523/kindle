@@ -1,6 +1,7 @@
 import { aiService } from './ai.service.js';
 import { AiChatMessage, AiError } from '../../models/ai.js';
 import { ProductSummary, ProductRequest } from '../../models/product.js';
+import { extractJson } from './ai-utils.js';
 
 export class ProductAgent {
   private readonly systemPrompt = `
@@ -53,20 +54,20 @@ export class ProductAgent {
         temperature: 0.3
       });
 
+      let result: ProductSummary;
       try {
-        const result = JSON.parse(response.content) as ProductSummary;
-        result.reasoning = response.reasoningDetails;
-        return result;
-      } catch (parseError) {
-        const jsonMatch = response.content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const result = JSON.parse(jsonMatch[0]) as ProductSummary;
-          result.reasoning = response.reasoningDetails;
-          return result;
+        result = extractJson<ProductSummary>(response.content);
+      } catch (e) {
+        if (response.reasoning_details) {
+          result = extractJson<ProductSummary>(response.reasoning_details);
+        } else {
+          throw e;
         }
-        throw new Error('AI failed to provide a structured product summary');
       }
+      result.reasoning = response.reasoning_details;
+      return result;
     } catch (error: any) {
+      if (error instanceof AiError) throw error;
       throw new AiError(`Product Agent Error: ${error.message}`, 500, 'product-agent');
     }
   }

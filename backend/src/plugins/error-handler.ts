@@ -2,7 +2,7 @@ import { FastifyInstance, FastifyPluginAsync } from 'fastify';
 import fp from 'fastify-plugin';
 
 const errorHandler: FastifyPluginAsync = async (fastify: FastifyInstance) => {
-  fastify.setErrorHandler((error, request, reply) => {
+  fastify.setErrorHandler((error: any, request, reply) => {
     fastify.log.error(error);
 
     if (error.validation) {

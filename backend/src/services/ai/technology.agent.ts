@@ -1,6 +1,7 @@
 import { aiService } from './ai.service.js';
 import { AiChatMessage, AiError } from '../../models/ai.js';
 import { TechnologyRecommendation, TechnologyRequest } from '../../models/technology.js';
+import { extractJson } from './ai-utils.js';
 
 export class TechnologyAgent {
   private readonly systemPrompt = `
@@ -47,17 +48,19 @@ export class TechnologyAgent {
         temperature: 0.2
       });
 
+      let result: TechnologyRecommendation;
       try {
-        const result = JSON.parse(response.content) as TechnologyRecommendation;
-        return result;
-      } catch (parseError) {
-        const jsonMatch = response.content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          return JSON.parse(jsonMatch[0]) as TechnologyRecommendation;
+        result = extractJson<TechnologyRecommendation>(response.content);
+      } catch (e) {
+        if (response.reasoning_details) {
+          result = extractJson<TechnologyRecommendation>(response.reasoning_details);
+        } else {
+          throw e;
         }
-        throw new Error('AI failed to provide a structured technology recommendation');
       }
+      return result;
     } catch (error: any) {
+      if (error instanceof AiError) throw error;
       throw new AiError(`Technology Agent Error: ${error.message}`, 500, 'technology-agent');
     }
   }

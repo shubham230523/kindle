@@ -1,6 +1,7 @@
 import { aiService } from './ai.service.js';
 import { AiChatMessage, AiError } from '../../models/ai.js';
 import { ArchitectureBlueprint, ArchitectureRequest } from '../../models/architecture.js';
+import { extractJson } from './ai-utils.js';
 
 export class ArchitectureAgent {
   private readonly systemPrompt = `
@@ -49,20 +50,20 @@ export class ArchitectureAgent {
         temperature: 0.2
       });
 
+      let result: ArchitectureBlueprint;
       try {
-        const result = JSON.parse(response.content) as ArchitectureBlueprint;
-        result.reasoning = response.reasoningDetails;
-        return result;
-      } catch (parseError) {
-        const jsonMatch = response.content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const result = JSON.parse(jsonMatch[0]) as ArchitectureBlueprint;
-          result.reasoning = response.reasoningDetails;
-          return result;
+        result = extractJson<ArchitectureBlueprint>(response.content);
+      } catch (e) {
+        if (response.reasoning_details) {
+          result = extractJson<ArchitectureBlueprint>(response.reasoning_details);
+        } else {
+          throw e;
         }
-        throw new Error('AI failed to provide a structured architecture blueprint');
       }
+      result.reasoning = response.reasoning_details;
+      return result;
     } catch (error: any) {
+      if (error instanceof AiError) throw error;
       throw new AiError(`Architecture Agent Error: ${error.message}`, 500, 'architecture-agent');
     }
   }

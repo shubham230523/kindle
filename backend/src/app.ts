@@ -25,6 +25,8 @@ export async function buildApp() {
   await storageService.initialize();
 
   const app = fastify({
+    requestTimeout: 600000, // 10 minutes
+    connectionTimeout: 600000, // 10 minutes
     logger: {
       transport: {
         target: 'pino-pretty',

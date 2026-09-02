@@ -14,10 +14,11 @@ export class CodingAgent {
     4. Provide clear explanations for your changes.
     5. Ensure all file paths are relative to the project "src" root.
     6. If a "DEBUG CONTEXT" is provided, you must fix the reported issue while still respecting the original task and architecture.
-    7. Do NOT include extraneous text outside of the required JSON format.
-    8. FULL CODE MANDATORY: Every file in the "changes" array must contain the COMPLETE, production-ready source code.
-    9. NO PLACEHOLDERS: Do NOT use "TODO", "// implementation here", "...", or any other placeholders.
-    10. COMPILABLE: The code must be fully functional and ready to be compiled immediately.
+    7. NO PREAMBLE: Do NOT include ANY text, thinking, or explanation outside of the required JSON format.
+    8. START WITH BRACE: Your entire response MUST start with "{" and end with "}".
+    9. FULL CODE MANDATORY: Every file in the "changes" array must contain the COMPLETE, production-ready source code.
+    10. NO PLACEHOLDERS: Do NOT use "TODO", "// implementation here", "...", or any other placeholders.
+    11. COMPILABLE: The code must be fully functional and ready to be compiled immediately.
 
     OUTPUT FORMAT:
     You must output your response as a valid JSON object with the following structure:
@@ -34,7 +35,7 @@ export class CodingAgent {
     }
   `;
 
-  async executeTask(request: CodingRequest): Promise<CodingResult> {
+  async executeTask(request: CodingRequest, onChunk?: (chunk: string) => void): Promise<CodingResult> {
     let userInput = `
       ARCHITECTURE PATTERN: ${request.architecture.pattern}
       LAYERS: ${request.architecture.layers.join(', ')}
@@ -64,20 +65,45 @@ export class CodingAgent {
       const response = await aiService.chat({
         messages,
         temperature: 0.1
-      });
+      }, onChunk);
 
       try {
-        const result = extractJson<CodingResult>(response.content);
-        result.reasoning = response.reasoningDetails;
+        let result: CodingResult;
 
-        result.changes.forEach(change => {
-          if (change.path.startsWith('/') || change.path.includes('..')) {
-            throw new Error(`Security Error: Invalid file path detected: ${change.path}`);
+        try {
+          result = extractJson<CodingResult>(response.content);
+        } catch (initialError) {
+          // If content is empty but we have reasoning, try extracting from reasoning
+          // (some models occasionally dump JSON there if they get confused)
+          if (response.reasoning_details) {
+            try {
+              result = extractJson<CodingResult>(response.reasoning_details);
+            } catch (innerError) {
+              throw initialError; // Re-throw the original error if reasoning also fails
+            }
+          } else {
+            throw initialError;
           }
-        });
+        }
+
+        if (!result) {
+          throw new Error('Parsed coding result is null.');
+        }
+
+        result.reasoning = response.reasoning_details;
+
+        if (result.changes && Array.isArray(result.changes)) {
+          result.changes.forEach(change => {
+            if (change.path && (change.path.startsWith('/') || change.path.includes('..'))) {
+              throw new Error(`Security Error: Invalid file path detected: ${change.path}`);
+            }
+          });
+        }
 
         return result;
       } catch (parseError: any) {
+        console.error('Coding Agent JSON Extraction Error:', parseError.message);
+        console.error('Raw AI Content:', response.content);
         throw new Error(`Invalid AI Output: ${parseError.message}`);
       }
     } catch (error: any) {

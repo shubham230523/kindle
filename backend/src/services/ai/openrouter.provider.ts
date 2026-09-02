@@ -1,47 +1,106 @@
-import axios, { AxiosInstance } from 'axios';
 import { AiChatRequest, AiChatResponse, AiError } from '../../models/ai.js';
 import { AiProvider } from './ai-provider.interface.js';
 import { env } from '../../config/env.js';
 
 export class OpenRouterProvider implements AiProvider {
   public readonly name = 'openrouter';
-  private readonly client: AxiosInstance;
 
-  constructor() {
-    this.client = axios.create({
-      baseURL: 'https://openrouter.ai/api/v1',
-      headers: {
-        'Authorization': `Bearer ${env.OPENROUTER_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      timeout: 60000, // 60 seconds
-    });
-  }
-
-  async chat(request: AiChatRequest): Promise<AiChatResponse> {
+  async chat(request: AiChatRequest, onChunk?: (chunk: string) => void): Promise<AiChatResponse> {
     try {
-      const response = await this.client.post('/chat/completions', {
-        model: env.OPENROUTER_MODEL,
-        messages: request.messages.map(msg => ({
-          role: msg.role,
-          content: msg.content,
-          reasoning_details: msg.reasoning_details,
-        })),
-        temperature: request.temperature ?? 0.3,
-        max_tokens: request.maxTokens || 4096,
-        reasoning: { enabled: true },
+      const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${env.OPENROUTER_API_KEY}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': 'https://kindle.ai', // Required by OpenRouter
+          'X-Title': 'Kindle AI IDE',
+        },
+        body: JSON.stringify({
+          model: env.OPENROUTER_MODEL,
+          messages: request.messages.map(msg => ({
+            role: msg.role,
+            content: msg.content,
+            reasoning_details: msg.reasoning_details,
+          })),
+          temperature: request.temperature ?? 0.3,
+          max_tokens: request.maxTokens || 16384,
+          stream: true, // Enable streaming
+          reasoning: { enabled: true },
+          response_format: { type: 'json_object' },
+        }),
       });
 
-      if (!response.data || !response.data.choices || response.data.choices.length === 0) {
-        throw new Error('OpenRouter returned an empty response.');
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new AiError(
+          `OpenRouter API Error: ${errorData.error?.message || response.statusText}`,
+          response.status,
+          this.name,
+          'AI_PROVIDER_ERROR'
+        );
       }
 
-      const { choices, usage } = response.data;
-      const message = choices[0].message;
+      if (!response.body) {
+        throw new Error('OpenRouter returned an empty response body.');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let fullContent = '';
+      let fullReasoning = '';
+      let usage: any = null;
+      let lineBuffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        lineBuffer += decoder.decode(value, { stream: true });
+        const lines = lineBuffer.split('\n');
+        lineBuffer = lines.pop() || ''; // Keep the incomplete line in the buffer
+
+        for (const line of lines) {
+          const trimmedLine = line.trim();
+          if (!trimmedLine || !trimmedLine.startsWith('data: ')) continue;
+
+          const dataStr = trimmedLine.slice(6).trim();
+          if (dataStr === '[DONE]') continue;
+
+          try {
+            const data = JSON.parse(dataStr);
+            if (data.choices && data.choices[0].delta) {
+              const delta = data.choices[0].delta;
+
+              if (delta.content) {
+                fullContent += delta.content;
+                if (onChunk) onChunk(delta.content);
+              }
+
+              if (delta.reasoning_details) {
+                fullReasoning += delta.reasoning_details;
+              }
+
+              if (delta.refusal) {
+                throw new Error(`OpenRouter Refusal: ${delta.refusal}`);
+              }
+            }
+
+            if (data.usage) {
+              usage = data.usage;
+            }
+          } catch (e) {
+            // Partial JSON chunk, skip for now
+          }
+        }
+      }
+
+      if (!fullContent && !fullReasoning) {
+        throw new Error('OpenRouter returned null content. The model might have encountered an issue, a safety filter, or max tokens were exceeded during reasoning.');
+      }
 
       return {
-        content: message.content,
-        reasoningDetails: message.reasoning_details,
+        content: fullContent,
+        reasoning_details: fullReasoning || undefined,
         usage: {
           promptTokens: usage?.prompt_tokens || 0,
           completionTokens: usage?.completion_tokens || 0,
@@ -51,14 +110,7 @@ export class OpenRouterProvider implements AiProvider {
         model: env.OPENROUTER_MODEL,
       };
     } catch (error: any) {
-      if (axios.isAxiosError(error)) {
-        throw new AiError(
-          `OpenRouter API Error: ${error.response?.data?.error?.message || error.message}`,
-          error.response?.status || 500,
-          this.name,
-          'AI_PROVIDER_ERROR'
-        );
-      }
+      if (error instanceof AiError) throw error;
       throw new AiError(error.message, 500, this.name);
     }
   }

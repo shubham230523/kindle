@@ -1,6 +1,7 @@
 import { aiService } from './ai.service.js';
 import { AiChatMessage, AiError } from '../../models/ai.js';
 import { DevelopmentPlanResult, PlanningRequest } from '../../models/plan.js';
+import { extractJson } from './ai-utils.js';
 
 export class PlanningAgent {
   private readonly systemPrompt = `
@@ -60,20 +61,20 @@ export class PlanningAgent {
         temperature: 0.2
       });
 
+      let result: DevelopmentPlanResult;
       try {
-        const result = JSON.parse(response.content) as DevelopmentPlanResult;
-        result.reasoning = response.reasoningDetails;
-        return result;
-      } catch (parseError) {
-        const jsonMatch = response.content.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-          const result = JSON.parse(jsonMatch[0]) as DevelopmentPlanResult;
-          result.reasoning = response.reasoningDetails;
-          return result;
+        result = extractJson<DevelopmentPlanResult>(response.content);
+      } catch (e) {
+        if (response.reasoning_details) {
+          result = extractJson<DevelopmentPlanResult>(response.reasoning_details);
+        } else {
+          throw e;
         }
-        throw new Error('AI failed to provide a structured development plan');
       }
+      result.reasoning = response.reasoning_details;
+      return result;
     } catch (error: any) {
+      if (error instanceof AiError) throw error;
       throw new AiError(`Planning Agent Error: ${error.message}`, 500, 'planning-agent');
     }
   }

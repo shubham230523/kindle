@@ -53,46 +53,76 @@ class BackendAgentService implements AgentExecutionService {
           ExecutionLog(
             timestamp: DateTime.now(),
             message: 'Agent ${agent.name} is working...',
-            details: 'Sending request to backend coding agent.',
+            details: 'Opening stream to backend coding agent.',
           ),
         ],
       );
 
-      final response = await _client.post(
+      final request = http.Request(
+        'POST',
         Uri.parse('${AppConstants.apiBaseUrl}/coding/execute'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'projectId': project.id,
-          'task': task.toMap(),
-          'architecture': project.architecture?.toMap(),
-          'existingFiles': existingFiles,
-        }),
-      ).timeout(const Duration(minutes: 2));
+      );
+      request.headers['Content-Type'] = 'application/json';
+      request.body = jsonEncode({
+        'projectId': project.id,
+        'task': task.toMap(),
+        'architecture': project.architecture?.toMap(),
+        'existingFiles': existingFiles,
+      });
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final codingResult = CodingResult.fromMap(data);
+      final streamedResponse = await _client.send(request);
 
-        yield AgentExecution(
-          id: executionId,
-          agentId: agent.id,
-          taskId: task.id,
-          status: ExecutionStatus.completed,
-          startedAt: startedAt,
-          completedAt: DateTime.now(),
-          result: codingResult,
-          logs: [
-            ExecutionLog(
-              timestamp: DateTime.now(),
-              message: 'Code generation successful!',
-              details: codingResult.explanation,
-            ),
-          ],
-        );
+      if (streamedResponse.statusCode == 200) {
+        String buffer = '';
+        await for (final chunk in streamedResponse.stream.transform(utf8.decoder)) {
+          buffer += chunk;
+          
+          // Process SSE lines
+          final lines = buffer.split('\n');
+          // Keep the last partial line in the buffer
+          buffer = lines.removeLast();
+
+          for (final line in lines) {
+            if (line.startsWith('data: ')) {
+              final dataStr = line.substring(6).trim();
+              if (dataStr.isEmpty) continue;
+
+              final data = jsonDecode(dataStr);
+              final type = data['type'];
+              final content = data['content'];
+
+              if (type == 'chunk') {
+                // In a real UI, we might want to yield a progress update here
+                // For now, we just keep the stream alive
+              } else if (type == 'result') {
+                final codingResult = CodingResult.fromMap(content);
+                yield AgentExecution(
+                  id: executionId,
+                  agentId: agent.id,
+                  taskId: task.id,
+                  status: ExecutionStatus.completed,
+                  startedAt: startedAt,
+                  completedAt: DateTime.now(),
+                  result: codingResult,
+                  logs: [
+                    ExecutionLog(
+                      timestamp: DateTime.now(),
+                      message: 'Code generation successful!',
+                      details: codingResult.explanation,
+                    ),
+                  ],
+                );
+              } else if (type == 'error') {
+                throw Exception(data['message']);
+              }
+            }
+          }
+        }
       } else {
-        String errorMessage = 'Backend failed with status: ${response.statusCode}';
+        final errorBody = await streamedResponse.stream.bytesToString();
+        String errorMessage = 'Backend failed with status: ${streamedResponse.statusCode}';
         try {
-          final errorData = jsonDecode(response.body);
+          final errorData = jsonDecode(errorBody);
           if (errorData is Map && errorData.containsKey('message')) {
             errorMessage = errorData['message'];
           }

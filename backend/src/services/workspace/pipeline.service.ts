@@ -45,7 +45,8 @@ export class KindlePipelineService {
     });
 
     // Run first discovery pass
-    state.discovery = await discoveryAgent.processIdea(idea);
+    const discoveryOutput = await discoveryAgent.processIdea(idea);
+    state.discovery = discoveryOutput.result;
     await this.saveProjectState(state);
     return state;
   }
@@ -57,7 +58,8 @@ export class KindlePipelineService {
     switch (state.stage) {
       case PipelineStage.discovery:
         if (userInput && !state.discovery?.isDiscoveryComplete) {
-          state.discovery = await discoveryAgent.processIdea(userInput, []); // Would need full history in production
+          const discoveryOutput = await discoveryAgent.processIdea(userInput, []); // Would need full history in production
+          state.discovery = discoveryOutput.result;
         }
 
         if (state.discovery?.isDiscoveryComplete) {

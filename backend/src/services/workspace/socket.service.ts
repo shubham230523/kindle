@@ -1,6 +1,7 @@
 export type KindleEventType =
   | 'AGENT_STARTED'
   | 'AGENT_PROGRESS'
+  | 'AGENT_STREAM_CHUNK'
   | 'FILE_GENERATED'
   | 'BUILD_RUNNING'
   | 'TEST_COMPLETED'

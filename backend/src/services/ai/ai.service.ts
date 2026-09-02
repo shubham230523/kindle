@@ -16,7 +16,7 @@ export class AiService {
     this.providers.set(provider.name, provider);
   }
 
-  async chat(request: AiChatRequest, providerName?: string): Promise<AiChatResponse> {
+  async chat(request: AiChatRequest, onChunk?: (chunk: string) => void, providerName?: string): Promise<AiChatResponse> {
     const name = providerName || this.defaultProvider;
     const provider = this.providers.get(name);
 
@@ -24,7 +24,7 @@ export class AiService {
       throw new AiError(`AI Provider "${name}" not found`, 404);
     }
 
-    return provider.chat(request);
+    return provider.chat(request, onChunk);
   }
 
   setDefaultProvider(name: string) {

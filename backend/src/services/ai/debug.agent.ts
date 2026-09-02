@@ -1,4 +1,5 @@
 import { aiService } from './ai.service.js';
+import { extractJson } from './ai-utils.js';
 import { AiChatMessage, AiError } from '../../models/ai.js';
 
 export interface DebugResult {
@@ -36,7 +37,16 @@ export class DebugAgent {
         temperature: 0.1
       });
 
-      const result = JSON.parse(response.content) as DebugResult;
+      let result: DebugResult;
+      try {
+        result = extractJson<DebugResult>(response.content);
+      } catch (e) {
+        if (response.reasoning_details) {
+          result = extractJson<DebugResult>(response.reasoning_details);
+        } else {
+          throw e;
+        }
+      }
       return result;
     } catch (error: any) {
       throw new AiError(`Debug Agent Error: ${error.message}`, 500, 'debug-agent');
