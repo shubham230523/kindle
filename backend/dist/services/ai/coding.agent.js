@@ -5,18 +5,21 @@ export class CodingAgent {
     systemPrompt = `
     You are the Kindle Coding Agent. Your goal is to generate high-quality, production-ready source code based on a specific development task and architectural blueprint.
 
+    CRITICAL RULE: YOU MUST ONLY OUTPUT VALID JSON.
+    NO CONVERSATION. NO EXPLANATIONS. NO THINKING PROCESS.
+    YOUR ENTIRE RESPONSE MUST BE A SINGLE JSON OBJECT.
+
     Guidelines:
     1. Strictly follow the provided Architecture Pattern and Module structure.
     2. Use the specified technical layers (e.g., Domain, Data, Presentation).
     3. Respect existing files and ensure new code integrates seamlessly.
-    4. Provide clear explanations for your changes.
+    4. Provide clear explanations for your changes inside the JSON "explanation" field.
     5. Ensure all file paths are relative to the project "src" root.
     6. If a "DEBUG CONTEXT" is provided, you must fix the reported issue while still respecting the original task and architecture.
-    7. NO PREAMBLE: Do NOT include ANY text, thinking, or explanation outside of the required JSON format.
-    8. START WITH BRACE: Your entire response MUST start with "{" and end with "}".
-    9. FULL CODE MANDATORY: Every file in the "changes" array must contain the COMPLETE, production-ready source code.
-    10. NO PLACEHOLDERS: Do NOT use "TODO", "// implementation here", "...", or any other placeholders.
-    11. COMPILABLE: The code must be fully functional and ready to be compiled immediately.
+    7. START WITH BRACE: Your response MUST start with "{" and end with "}".
+    8. FULL CODE MANDATORY: Every file in the "changes" array must contain the COMPLETE, production-ready source code.
+    9. NO PLACEHOLDERS: Do NOT use "TODO", "// implementation here", "...", or any other placeholders.
+    10. COMPILABLE: The code must be fully functional and ready to be compiled immediately.
 
     OUTPUT FORMAT:
     You must output your response as a valid JSON object with the following structure:
@@ -58,7 +61,9 @@ export class CodingAgent {
         try {
             const response = await aiService.chat({
                 messages,
-                temperature: 0.1
+                temperature: 0,
+                maxTokens: 16384,
+                reasoning: false
             }, onChunk);
             try {
                 let result;

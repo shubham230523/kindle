@@ -1,3 +1,3 @@
-[12:10:45 UTC] [32mINFO[39m: [36mServer listening at http://127.0.0.1:3000[39m
-[12:10:45 UTC] [32mINFO[39m: [36mServer listening at http://192.168.1.5:3000[39m
-[12:10:45 UTC] [32mINFO[39m: [36mKindle Backend listening at http://0.0.0.0:3000[39m
+[12:28:08 UTC] [32mINFO[39m: [36mServer listening at http://127.0.0.1:3000[39m
+[12:28:08 UTC] [32mINFO[39m: [36mServer listening at http://192.168.1.5:3000[39m
+[12:28:08 UTC] [32mINFO[39m: [36mKindle Backend listening at http://0.0.0.0:3000[39m

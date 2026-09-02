@@ -8,6 +8,7 @@ export interface AiChatRequest {
   messages: AiChatMessage[];
   temperature?: number;
   maxTokens?: number;
+  reasoning?: boolean;
 }
 
 export interface AiChatResponse {

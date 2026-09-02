@@ -25,7 +25,7 @@ export class OpenRouterProvider implements AiProvider {
           temperature: request.temperature ?? 0.3,
           max_tokens: request.maxTokens || 16384,
           stream: true, // Enable streaming
-          reasoning: { enabled: true },
+          reasoning: request.reasoning !== false ? { enabled: true } : undefined,
           response_format: { type: 'json_object' },
         }),
       });
@@ -55,13 +55,21 @@ export class OpenRouterProvider implements AiProvider {
         const { done, value } = await reader.read();
         if (done) break;
 
-        lineBuffer += decoder.decode(value, { stream: true });
+        const decoded = decoder.decode(value, { stream: true });
+        lineBuffer += decoded;
         const lines = lineBuffer.split('\n');
         lineBuffer = lines.pop() || ''; // Keep the incomplete line in the buffer
 
         for (const line of lines) {
           const trimmedLine = line.trim();
-          if (!trimmedLine || !trimmedLine.startsWith('data: ')) continue;
+          if (!trimmedLine) continue;
+
+          if (trimmedLine.startsWith(':')) continue; // Comment line
+
+          if (!trimmedLine.startsWith('data: ')) {
+            // Unexpected line format in stream, but we'll try to keep going
+            continue;
+          }
 
           const dataStr = trimmedLine.slice(6).trim();
           if (dataStr === '[DONE]') continue;
@@ -69,8 +77,10 @@ export class OpenRouterProvider implements AiProvider {
           try {
             const data = JSON.parse(dataStr);
             if (data.error) {
+              console.error('OpenRouter Stream Data Error:', data.error);
               throw new Error(`OpenRouter Stream Error: ${data.error.message || JSON.stringify(data.error)}`);
             }
+
             if (data.choices && data.choices[0].delta) {
               const delta = data.choices[0].delta;
 
@@ -92,8 +102,22 @@ export class OpenRouterProvider implements AiProvider {
               usage = data.usage;
             }
           } catch (e) {
-            // Partial JSON chunk, skip for now
+            // Partial JSON chunk or parse error, usually safe to ignore in SSE
           }
+        }
+      }
+
+      // Handle any remaining data in the buffer after the stream ends
+      if (lineBuffer.trim().startsWith('data: ')) {
+        const dataStr = lineBuffer.trim().slice(6).trim();
+        if (dataStr !== '[DONE]') {
+          try {
+            const data = JSON.parse(dataStr);
+            if (data.choices && data.choices[0].delta?.content) {
+              fullContent += data.choices[0].delta.content;
+              if (onChunk) onChunk(data.choices[0].delta.content);
+            }
+          } catch (e) {}
         }
       }
 
