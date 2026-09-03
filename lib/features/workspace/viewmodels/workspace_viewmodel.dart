@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../project/models/project.dart';
 import '../../project/models/agent.dart';
 import '../../project/models/agent_execution.dart';
@@ -26,11 +27,6 @@ class WorkspaceViewModel extends ChangeNotifier {
 
   bool _isLocalAiMode = false;
   bool get isLocalAiMode => _isLocalAiMode;
-
-  void toggleLocalAiMode() {
-    _isLocalAiMode = !_isLocalAiMode;
-    notifyListeners();
-  }
 
   bool _isModelReady = false;
   bool get isModelReady => _isModelReady;
