@@ -25,8 +25,12 @@ class ModelDownloaderService {
   static const String _modelFileName = 'qwen2.5-coder-1.5b.gguf';
 
   final Dio _dio = Dio(BaseOptions(
-    connectTimeout: const Duration(seconds: 30),
-    receiveTimeout: const Duration(minutes: 10), // Long timeout for large files
+    connectTimeout: const Duration(seconds: 60),
+    receiveTimeout: const Duration(minutes: 20),
+    headers: {
+      'User-Agent': 'Kindle/1.0 (Flutter; On-Device AI)',
+      'Accept': '*/*',
+    },
   ));
   CancelToken? _cancelToken;
 
@@ -89,34 +93,42 @@ class ModelDownloaderService {
 
       debugPrint('ModelDownloaderService: Starting GET request to $_modelUrl');
       
-      await _dio.download(
+      final response = await _dio.get<ResponseBody>(
         _modelUrl,
-        savePath,
-        onReceiveProgress: (received, total) {
-          if (total != -1) {
-            final progress = received / total;
-            // More frequent progress updates for better UX, but still throttled by MB
-            if (received % (512 * 1024) == 0 || received == total) {
-              controller.add(DownloadProgress(
-                progress: progress,
-                status: 'Downloading: ${(progress * 100).toStringAsFixed(1)}% (${(received / (1024 * 1024)).toStringAsFixed(1)} / ${(total / (1024 * 1024)).toStringAsFixed(1)} MB)',
-              ));
-            }
-          } else {
-            // If total is unknown
-            if (received % (1024 * 1024) == 0) {
-              controller.add(DownloadProgress(
-                progress: 0.0,
-                status: 'Downloading: ${(received / (1024 * 1024)).toStringAsFixed(1)} MB (Total unknown)',
-              ));
-            }
-          }
-        },
+        options: Options(responseType: ResponseType.stream),
         cancelToken: _cancelToken,
-        deleteOnError: true,
       );
 
-      debugPrint('ModelDownloaderService: Download call finished.');
+      final totalBytes = int.tryParse(response.headers.value('content-length') ?? '-1') ?? -1;
+      int receivedBytes = 0;
+      
+      final sink = file.openWrite();
+      
+      await response.data!.stream.listen(
+        (chunk) {
+          receivedBytes += chunk.length;
+          sink.add(chunk);
+          
+          if (receivedBytes % (1024 * 1024) == 0 || receivedBytes == totalBytes) {
+            final progress = totalBytes != -1 ? receivedBytes / totalBytes : 0.0;
+            controller.add(DownloadProgress(
+              progress: progress,
+              status: 'Downloading: ${(progress * 100).toStringAsFixed(1)}% (${(receivedBytes / (1024 * 1024)).toStringAsFixed(1)} / ${(totalBytes / (1024 * 1024)).toStringAsFixed(1)} MB)',
+            ));
+          }
+        },
+        onDone: () async {
+          await sink.close();
+          debugPrint('ModelDownloaderService: Stream finished.');
+        },
+        onError: (e) {
+          sink.close();
+          throw e;
+        },
+        cancelOnError: true,
+      ).asFuture();
+      
+      debugPrint('ModelDownloaderService: Download completed.');
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool(_modelKey, true);
 

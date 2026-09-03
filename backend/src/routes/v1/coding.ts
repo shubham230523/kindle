@@ -42,9 +42,16 @@ export default async function codingRoutes(fastify: FastifyInstance) {
       await checkOwnership(codingRequest.projectId, userId);
 
       let headersSent = false;
-      const providerName = codingRequest.isLocalMode ? 'local' : undefined;
+      const isLocal = codingRequest.isLocalMode === true;
+      const providerName = isLocal ? 'local' : undefined;
 
-      const result = await codingAgent.executeTask(codingRequest, (chunk) => {
+      // Map isLocalMode to delegate flag for the agent
+      const requestWithDelegate = {
+        ...codingRequest,
+        delegate: isLocal
+      };
+
+      const result = await codingAgent.executeTask(requestWithDelegate, (chunk) => {
         if (!headersSent) {
           // Set headers for Server-Sent Events (SSE)
           reply.raw.setHeader('Content-Type', 'text/event-stream');

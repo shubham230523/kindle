@@ -111,9 +111,16 @@ class WorkspaceViewModel extends ChangeNotifier {
     }
 
     if (_isLocalAiMode && !_isModelReady) {
-      debugPrint('WorkspaceViewModel: Local AI Mode enabled but model not ready. Starting download.');
-      downloadModel();
-      return;
+      debugPrint('WorkspaceViewModel: 🛡️ LOCAL AI GATING ACTIVE. Checking model...');
+      final actuallyReady = await _downloaderService.isModelDownloaded();
+      if (!actuallyReady) {
+        debugPrint('WorkspaceViewModel: Model not ready. Initiating/Resuming download.');
+        downloadModel();
+        return;
+      } else {
+        debugPrint('WorkspaceViewModel: Model verified on disk. Proceeding.');
+        _isModelReady = true;
+      }
     }
 
     _isDeveloping = true;
