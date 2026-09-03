@@ -4,36 +4,38 @@
 
 [![Live Demo](https://img.shields.io/badge/Live-Demo-brightgreen?style=for-the-badge)](https://shubham230523.github.io/kindle/)
 
-**Kindle** is a next-generation, AI-driven application builder that transforms high-level ideas into production-ready software through an autonomous multi-agent ecosystem. Unlike traditional code assistants, Kindle orchestrates a fleet of specialized agents to design, implement, integrate, and verify entire applications.
+**Kindle** is a cutting-edge, AI-native application engineering platform that transforms high-level creative ideas into production-ready software. By orchestrating a sophisticated fleet of specialized AI agents, Kindle handles the entire development lifecycle—from discovery and architectural design to implementation, testing, and self-healing.
 
 > **Think it. Kindle builds it.**
 
 ## 🚀 Key Features
 
-*   **Task-Based Agent Graph**: A sophisticated orchestration engine (inspired by LangGraph) that manages complex dependencies and parallel execution across multiple AI agents.
-*   **Granular Decomposition**: Automatically breaks down large features into layer-specific sub-tasks (UI, Domain, Data, Integration). Each sub-task is load-balanced to ~20% complexity to ensure high-precision generation.
-*   **Deep Behavioral Simulation**: A zero-cost, zero-load mock engine that mimics real LLM behavior. Perfect project "plumbing" and integration logic without consuming API credits or hardware resources.
-*   **Autonomous Self-Healing**: Integrated Build and Testing agents that detect failures, analyze logs, and trigger automated debugging loops to reach a verified state.
-*   **Intelligent Response Caching**: Disk-based MD5 caching for AI responses, minimizing OpenRouter API consumption and ensuring instant re-runs.
-*   **Hybrid Provider Strategy**: Seamless switching between OpenRouter (Cloud), Ollama (Local), and Simulation modes based on environment credentials.
+*   **Universal Prompt Delegation**: A hybrid architecture that allows the backend to orchestrate the "Lang Graph" while delegating heavy inference tasks to the client's local hardware.
+*   **On-Device AI Inference**: Integrated with `llama_cpp_dart` (v0.9.x), Kindle runs quantized GGUF models (like Qwen2.5-Coder) directly on Windows, macOS, Android, and iOS using background Dart Isolates for zero UI lag.
+*   **Task-Based Agent Graph**: An advanced orchestration engine inspired by LangGraph that manages complex task dependencies and parallel multi-agent execution waves.
+*   **Granular Atomic Decomposition**: Automatically breaks features into "atomic" units (max 1-2 files per agent). This ensures that even small local models can generate high-precision code without logical drift.
+*   **Download-on-Launch Architecture**: A "thin client" approach that downloads optimized AI models (~1.2GB) on first launch, ensuring the app remains lightweight while providing full offline intelligence.
+*   **Deep Behavioral Simulation**: A robust mock engine that mimics real LLM responses, allowing developers to verify project "plumbing" and integration logic with zero API cost.
+*   **Intelligent MD5 Caching**: Persistent disk-based response caching for cloud providers, ensuring you never pay for the same prompt twice.
 
 ## 🤖 The Kindle Agent Fleet
 
-Kindle operates through specialized, role-based agents:
+Kindle leverages specialized, role-based agents for maximum precision:
 
-*   **Discovery & Product Agents** — Refine ideas into actionable requirements and product specs.
-*   **Architecture & Tech Agents** — Blueprint the system using industry-standard patterns (Clean Architecture, BLoC, MVVM).
-*   **Decomposer Agent** — The strategist that splits features into granular sub-tasks for parallel processing.
+*   **Discovery & Product Agents** — Refines raw ideas into structured requirements and product blueprints.
+*   **Architecture Agent** — Designs the system using industry-standard patterns (Clean Architecture, BLoC, MVVM).
+*   **Decomposer Agent** — The strategist that splits features into atomic sub-tasks optimized for the chosen AI provider.
 *   **Coding Agents** — Specialized implementation agents for UI, Domain, and Data layers.
-*   **Integrator Agent** — The master weaver that merges code, resolves conflicts, and wires up Dependency Injection (DI) and Routing.
-*   **Build & Testing Agents** — The quality guardians that verify every line of generated code.
+*   **Integrator Agent** — The master weaver that merges parallel outputs, resolves conflicts, and wires up Dependency Injection (DI) and Routing.
+*   **Build & Testing Agents** — The quality guardians that perform real-time verification and automated debugging loops.
 
 ## 🛠️ Technology Stack
 
-*   **Frontend**: Flutter / Dart (Mobile, Desktop, Web) with BLoC state management.
-*   **Backend**: Node.js / TypeScript using the high-performance **Fastify** framework.
+*   **Frontend**: Flutter / Dart (Cross-Platform) using `provider` and `BLoC` for state management.
+*   **Backend**: Node.js / TypeScript powered by the high-performance **Fastify** framework.
 *   **Database**: PostgreSQL with Prisma ORM.
-*   **AI**: OpenRouter (Cloud), Ollama (Local), and Custom Simulation Provider.
+*   **AI Engine**: `llama_cpp_dart` (0.9.0-dev) for on-device inference; OpenRouter for cloud scaling.
+*   **Networking**: `Dio` with advanced stream-based downloading and progress tracking.
 
 ## ⚙️ How It Works
 
@@ -42,26 +44,15 @@ graph TD
     A[Idea] --> B[Discovery Agent]
     B --> C[Architecture Blueprint]
     C --> D[Decomposer Agent]
-    D --> E[Sub-Task Graph]
-    E --> F[Parallel Coding Agents]
+    D --> E[Task Graph]
+    E -- Delegation --> F[On-Device AI Inference]
     F --> G[Integrator Agent]
     G --> H[Build & Test Agents]
-    H --> I[Verified Application]
-    H -- Failure --> J[Debug Agent]
-    J --> F
+    H -- Verified --> I[Final Application]
+    H -- Failure --> J[Debug Loop]
+    J --> E
 ```
-
-## 🗺️ Progress
-
-*   [x] Task-Based Agent Graph Orchestration
-*   [x] Multi-Agent Parallel Execution
-*   [x] Deep Simulation Engine (Zero-Cost Dev)
-*   [x] Intelligent Response Caching
-*   [x] Role-Based Specialized Coding
-*   [x] Automated Build & Test Integration
-*   [ ] Multi-Framework Support (React, Native)
-*   [ ] Cloud Workspace Deployment
 
 ---
 
-**Kindle is exploring the frontier of autonomous software engineering—turning the development process into a high-level creative direction rather than a manual implementation struggle.**
+**Kindle is shifting software development from manual implementation to high-level orchestration—empowering creators to build entire ecosystems with the power of autonomous AI.**
