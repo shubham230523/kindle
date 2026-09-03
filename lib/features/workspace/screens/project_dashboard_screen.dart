@@ -6,6 +6,8 @@ import '../../../shared/widgets/section_title.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/responsive_layout.dart';
+import '../viewmodels/workspace_viewmodel.dart';
+import 'package:provider/provider.dart';
 
 import '../../project/models/agent_execution.dart';
 
@@ -58,6 +60,8 @@ class ProjectDashboardScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _ProjectHeader(project: project),
+                      const SizedBox(height: AppConstants.spacingLg),
+                      _LocalAiModeToggle(),
                       const SizedBox(height: AppConstants.spacingLg),
                       if (isDeveloping && activeExecution != null) ...[
                         _CurrentActivityCard(execution: activeExecution!),
@@ -427,6 +431,55 @@ class _ActivityItem extends StatelessWidget {
         ),
         if (!isLast) const Divider(height: 1, indent: 56),
       ],
+    );
+  }
+}
+
+class _LocalAiModeToggle extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    final viewModel = context.watch<WorkspaceViewModel>();
+
+    return KindleCard(
+      color: viewModel.isLocalAiMode ? Colors.blue.shade50 : Colors.grey.shade50,
+      borderColor: viewModel.isLocalAiMode ? Colors.blue.shade200 : Colors.grey.shade300,
+      child: Row(
+        children: [
+          Icon(
+            viewModel.isLocalAiMode ? Icons.computer : Icons.cloud_outlined,
+            color: viewModel.isLocalAiMode ? Colors.blue : Colors.grey,
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Local AI Mode',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: viewModel.isLocalAiMode ? Colors.blue.shade900 : Colors.grey.shade900,
+                  ),
+                ),
+                Text(
+                  viewModel.isLocalAiMode
+                      ? 'Inference running on your laptop (GGUF)'
+                      : 'Using Kindle Cloud Agents (OpenRouter)',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: viewModel.isLocalAiMode ? Colors.blue.shade700 : Colors.grey.shade600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: viewModel.isLocalAiMode,
+            onChanged: (value) => viewModel.toggleLocalAiMode(),
+            activeColor: Colors.blue,
+          ),
+        ],
+      ),
     );
   }
 }

@@ -201,14 +201,20 @@ export class SimulationProvider implements AiProvider {
 
     if (role === 'UI') {
       changes.push({
-        path: "lib/features/home/presentation/pages/home_page.dart",
-        content: `import 'package:flutter/material.dart';\n\nclass HomePage extends StatelessWidget {\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(appBar: AppBar(title: Text('${taskTitle}')), body: Center(child: Text('Simulated UI for ${taskTitle}')));\n  }\n}`,
+        path: `lib/features/home/presentation/pages/${taskTitle.toLowerCase().replaceAll(' ', '_')}_page.dart`,
+        content: `import 'package:flutter/material.dart';\n\nclass ${taskTitle.replaceAll(' ', '')}Page extends StatelessWidget {\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(appBar: AppBar(title: Text('${taskTitle}')), body: Center(child: Text('Simulated UI for ${taskTitle}')));\n  }\n}`,
         type: "create"
       });
     } else if (role === 'DOMAIN') {
       changes.push({
-        path: "lib/features/home/domain/entities/user.dart",
-        content: `class User {\n  final String id;\n  final String name;\n  User({required this.id, required this.name});\n}`,
+        path: `lib/features/home/domain/entities/${taskTitle.toLowerCase().replaceAll(' ', '_')}.dart`,
+        content: `class ${taskTitle.replaceAll(' ', '')} {\n  final String id;\n  final String name;\n  ${taskTitle.replaceAll(' ', '')}({required this.id, required this.name});\n}`,
+        type: "create"
+      });
+    } else if (role === 'DATA') {
+      changes.push({
+        path: `lib/features/home/data/repositories/${taskTitle.toLowerCase().replaceAll(' ', '_')}_impl.dart`,
+        content: `// Simulated Data Implementation for ${taskTitle}`,
         type: "create"
       });
     } else {

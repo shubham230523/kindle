@@ -51,6 +51,24 @@ export class IntegratorAgent {
     ];
 
     try {
+      if (process.env.OPENROUTER_API_KEY === 'open-router-api-key') {
+        console.log('[INTEGRATOR_AGENT] 🔄 SIMULATION: Consolidating sub-agent changes...');
+        const consolidatedChanges = allResults.flatMap(r => r.changes);
+
+        // Add a virtual main.dart that includes the integrated files
+        consolidatedChanges.push({
+          path: "lib/main.dart",
+          content: `// Simulated Main\n// Integrated Files:\n${consolidatedChanges.map(c => `// - ${c.path}`).join('\n')}`,
+          type: "modify"
+        });
+
+        return {
+          changes: consolidatedChanges,
+          explanation: `[SIMULATED] Successfully consolidated ${allResults.length} sub-agent outputs into a unified feature set.`,
+          confidence: 1.0
+        };
+      }
+
       const response = await aiService.chat({
         messages,
         temperature: 0,
