@@ -2,6 +2,7 @@ import { codingAgent } from '../ai/coding.agent.js';
 import { buildAgent } from '../ai/build.agent.js';
 import { testingAgent } from '../ai/testing.agent.js';
 import { debugAgent } from '../ai/debug.agent.js';
+import { graphService } from './graph.service.js';
 import { codeChangeService } from './code-change.service.js';
 import { executionService } from './execution.service.js';
 import { workspaceService } from './workspace.service.js';
@@ -44,26 +45,32 @@ export class DevelopmentOrchestrator {
             await executionService.recordExecution(execution);
           }
 
-          // 1. Get Context
-          const existingFiles = await workspaceService.listProjectFiles(projectId);
-
-          // 2. Generate Code
+          // 1. Generate Code (using Graph Service)
           execution.status = ExecutionStatus.running;
-          const progressMsg = debugContext ? 'Generating targeted fix...' : 'Generating implementation...';
+          const progressMsg = debugContext ? 'Generating targeted fix...' : 'Executing multi-agent task graph...';
           execution.logs.push(executionService.createLog(progressMsg));
           socketService.emit(projectId, 'AGENT_PROGRESS', { status: execution.status, message: progressMsg });
           await executionService.recordExecution(execution);
 
-          const codingResult = await codingAgent.executeTask({
-            projectId,
-            architecture,
-            task,
-            existingFiles,
-            debugContext,
-          });
+          let codingResult;
+          if (debugContext) {
+            // If we are healing, we might still use the coding agent directly for the fix
+            // or we could re-run a specific sub-task if we tracked them.
+            // For now, let's use the coding agent for targeted fixes.
+            const existingFiles = await workspaceService.listProjectFiles(projectId);
+            codingResult = await codingAgent.executeTask({
+              projectId,
+              architecture,
+              task,
+              existingFiles,
+              debugContext,
+            });
+          } else {
+            codingResult = await graphService.executeTaskGraph(projectId, task, architecture);
+          }
 
-          // 3. Apply Changes
-          const applyMsg = 'Applying file modifications...';
+          // 2. Apply Changes
+          const applyMsg = 'Applying integrated modifications...';
           execution.logs.push(executionService.createLog(applyMsg, codingResult.explanation));
           socketService.emit(projectId, 'AGENT_PROGRESS', { message: applyMsg });
 

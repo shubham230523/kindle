@@ -9,6 +9,23 @@ export interface PlanTask {
   complexity: 'low' | 'medium' | 'high';
 }
 
+export interface SubTask {
+  id: string;
+  parentId: string;
+  title: string;
+  description: string;
+  role: 'UI' | 'DOMAIN' | 'DATA' | 'INTEGRATION';
+  dependencies: string[];
+  expectedOutput: string;
+  acceptanceCriteria: string[];
+  estimatedComplexity: 'low' | 'medium' | 'high';
+}
+
+export interface DecompositionResult {
+  subTasks: SubTask[];
+  explanation: string;
+}
+
 export interface PlanPhase {
   id: string;
   title: string;

@@ -4,8 +4,12 @@ import { AiChatMessage, AiError } from '../../models/ai.js';
 import { CodingResult, CodingRequest } from '../../models/coding.js';
 
 export class CodingAgent {
-  private readonly systemPrompt = `
+  private getSystemPrompt(role?: string) {
+    const roleInstruction = role ? `You are acting in the ${role} role. Focus strictly on ${role}-related implementation details.` : '';
+
+    return `
     You are the Kindle Coding Agent. Your goal is to generate high-quality, production-ready source code based on a specific development task and architectural blueprint.
+    ${roleInstruction}
 
     CRITICAL RULE: YOU MUST ONLY OUTPUT VALID JSON.
     NO CONVERSATION. NO EXPLANATIONS. NO THINKING PROCESS.
@@ -37,12 +41,14 @@ export class CodingAgent {
       "confidence": 0.95
     }
   `;
+  }
 
   async executeTask(request: CodingRequest, onChunk?: (chunk: string) => void): Promise<CodingResult> {
     let userInput = `
       ARCHITECTURE PATTERN: ${request.architecture.pattern}
       LAYERS: ${request.architecture.layers.join(', ')}
       TASK: ${request.task.title}
+      ROLE: ${request.task.role || 'General'}
       DESCRIPTION: ${request.task.description}
       EXPECTED OUTPUT: ${request.task.expectedOutput}
       ACCEPTANCE CRITERIA: ${request.task.acceptanceCriteria.join(' | ')}
@@ -60,7 +66,7 @@ export class CodingAgent {
     }
 
     const messages: AiChatMessage[] = [
-      { role: 'system', content: this.systemPrompt },
+      { role: 'system', content: this.getSystemPrompt(request.task.role) },
       { role: 'user', content: userInput }
     ];
 

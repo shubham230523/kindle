@@ -25,6 +25,7 @@ export interface CodingRequest {
     description: string;
     expectedOutput: string;
     acceptanceCriteria: string[];
+    role?: 'UI' | 'DOMAIN' | 'DATA' | 'INTEGRATION';
   };
   existingFiles: string[];
   debugContext?: {
