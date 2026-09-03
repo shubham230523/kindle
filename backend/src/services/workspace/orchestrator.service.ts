@@ -72,7 +72,7 @@ export class DevelopmentOrchestrator {
               debugContext,
             });
           } else {
-            codingResult = await graphService.executeTaskGraph(projectId, task, architecture, strategy);
+            codingResult = await graphService.executeTaskGraph(projectId, task, architecture, strategy, isLocalMode);
           }
 
           // 2. Apply Changes

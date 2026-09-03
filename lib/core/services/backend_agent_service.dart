@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../../features/project/models/agent.dart';
@@ -9,9 +10,13 @@ import '../../features/project/models/project.dart';
 import '../../features/project/models/coding_result.dart';
 import '../constants/app_constants.dart';
 import 'agent_simulator_service.dart';
+import 'local_inference_service.dart';
+import 'model_downloader_service.dart';
 
 class BackendAgentService implements AgentExecutionService {
   final http.Client _client;
+  final LocalInferenceService _localInference = LocalInferenceService();
+  final ModelDownloaderService _downloader = ModelDownloaderService();
 
   BackendAgentService({http.Client? client}) : _client = client ?? http.Client();
 
@@ -98,22 +103,36 @@ class BackendAgentService implements AgentExecutionService {
                 // For now, we just keep the stream alive
               } else if (type == 'result') {
                 final codingResult = CodingResult.fromMap(content);
-                yield AgentExecution(
-                  id: executionId,
-                  agentId: agent.id,
-                  taskId: task.id,
-                  status: ExecutionStatus.completed,
-                  startedAt: startedAt,
-                  completedAt: DateTime.now(),
-                  result: codingResult,
-                  logs: [
-                    ExecutionLog(
-                      timestamp: DateTime.now(),
-                      message: 'Code generation successful!',
-                      details: codingResult.explanation,
-                    ),
-                  ],
-                );
+                
+                if (content['promptDelegation'] != null) {
+                  // Handle client-side generation
+                  final delegation = content['promptDelegation'];
+                  yield* _handleLocalGeneration(
+                    executionId, 
+                    agent, 
+                    task, 
+                    startedAt, 
+                    delegation['systemPrompt'], 
+                    delegation['userPrompt']
+                  );
+                } else {
+                  yield AgentExecution(
+                    id: executionId,
+                    agentId: agent.id,
+                    taskId: task.id,
+                    status: ExecutionStatus.completed,
+                    startedAt: startedAt,
+                    completedAt: DateTime.now(),
+                    result: codingResult,
+                    logs: [
+                      ExecutionLog(
+                        timestamp: DateTime.now(),
+                        message: 'Code generation successful!',
+                        details: codingResult.explanation,
+                      ),
+                    ],
+                  );
+                }
               } else if (type == 'error') {
                 throw Exception(data['message']);
               }
@@ -149,6 +168,66 @@ class BackendAgentService implements AgentExecutionService {
           ),
         ],
       );
+    }
+  Stream<AgentExecution> _handleLocalGeneration(
+    String executionId,
+    Agent agent,
+    Task task,
+    DateTime startedAt,
+    String systemPrompt,
+    String userPrompt,
+  ) async* {
+    yield AgentExecution(
+      id: executionId,
+      agentId: agent.id,
+      taskId: task.id,
+      status: ExecutionStatus.running,
+      startedAt: startedAt,
+      logs: [
+        ExecutionLog(
+          timestamp: DateTime.now(),
+          message: 'Delegating to local AI engine...',
+          details: 'Prompt received from backend. Running on-device inference.',
+        ),
+      ],
+    );
+
+    if (!kIsWeb) {
+      final modelPath = await _downloader.getModelPath();
+      await _localInference.initialize(modelPath);
+    }
+
+    String resultString = '';
+    await for (final token in _localInference.generate(
+      systemPrompt: systemPrompt,
+      userPrompt: userPrompt,
+    )) {
+      resultString += token;
+      // You could yield chunks here if the UI supported it
+    }
+
+    try {
+      final resultMap = jsonDecode(resultString);
+      final codingResult = CodingResult.fromMap(resultMap);
+
+      yield AgentExecution(
+        id: executionId,
+        agentId: agent.id,
+        taskId: task.id,
+        status: ExecutionStatus.completed,
+        startedAt: startedAt,
+        completedAt: DateTime.now(),
+        result: codingResult,
+        logs: [
+          ExecutionLog(
+            timestamp: DateTime.now(),
+            message: 'Local code generation complete!',
+            details: codingResult.explanation,
+          ),
+        ],
+      );
+    } catch (e) {
+      throw Exception('Failed to parse local AI output: $e');
     }
   }
 }

@@ -9,6 +9,10 @@ export interface CodingResult {
   explanation: string;
   confidence: number;
   reasoning?: string;
+  promptDelegation?: {
+    systemPrompt: string;
+    userPrompt: string;
+  };
 }
 
 export interface CodingRequest {

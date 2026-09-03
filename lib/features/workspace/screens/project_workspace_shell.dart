@@ -4,6 +4,7 @@ import '../../../core/services/agent_simulator_service.dart';
 import '../../../core/services/backend_agent_service.dart';
 import '../../project/models/project.dart';
 import 'project_dashboard_screen.dart';
+import '../widgets/onboarding_overlay.dart';
 import 'agent_activity_screen.dart';
 import 'generated_code_screen.dart';
 import 'generated_changes_screen.dart';
@@ -114,8 +115,10 @@ class _ProjectWorkspaceShellState extends State<ProjectWorkspaceShell> {
     return ListenableBuilder(
       listenable: _viewModel,
       builder: (context, _) {
-        return Scaffold(
-          body: Row(
+        return Stack(
+          children: [
+            Scaffold(
+              body: Row(
             children: [
               if (!isMobile)
                 SizedBox(
@@ -228,6 +231,13 @@ class _ProjectWorkspaceShellState extends State<ProjectWorkspaceShell> {
                   foregroundColor: Colors.white,
                 )
               : null,
+            ),
+            if (_viewModel.downloadStream != null)
+              OnboardingOverlay(
+                progressStream: _viewModel.downloadStream!,
+                onDismiss: () => _viewModel.onDownloadDismissed(),
+              ),
+          ],
         );
       },
     );

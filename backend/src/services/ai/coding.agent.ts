@@ -43,7 +43,7 @@ export class CodingAgent {
   `;
   }
 
-  async executeTask(request: CodingRequest, onChunk?: (chunk: string) => void, providerName?: string): Promise<CodingResult> {
+  async executeTask(request: CodingRequest & { delegate?: boolean }, onChunk?: (chunk: string) => void, providerName?: string): Promise<CodingResult> {
     let userInput = `
       ARCHITECTURE PATTERN: ${request.architecture.pattern}
       LAYERS: ${request.architecture.layers.join(', ')}
@@ -65,8 +65,23 @@ export class CodingAgent {
       `;
     }
 
+    const systemPrompt = this.getSystemPrompt(request.task.role);
+
+    if (request.delegate) {
+      console.log(`[CODING_AGENT] 🚩 Delegating prompt to client for task: ${request.task.title}`);
+      return {
+        changes: [],
+        explanation: 'Delegating to client-side local LLM.',
+        confidence: 1.0,
+        promptDelegation: {
+          systemPrompt,
+          userPrompt: userInput
+        }
+      };
+    }
+
     const messages: AiChatMessage[] = [
-      { role: 'system', content: this.getSystemPrompt(request.task.role) },
+      { role: 'system', content: systemPrompt },
       { role: 'user', content: userInput }
     ];
 

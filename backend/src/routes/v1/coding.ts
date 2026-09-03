@@ -165,4 +165,15 @@ export default async function codingRoutes(fastify: FastifyInstance) {
       });
     }
   });
+
+  fastify.post('/coding/submit-result', { preHandler: [authGuard] }, async (request, reply) => {
+    const { projectId, taskId, result } = request.body as {
+      projectId: string;
+      taskId: string;
+      result: CodingResult;
+    };
+
+    console.log(`[CODING_ROUTE] 📥 Received client-side result for task: ${taskId}`);
+    return { status: 'success' };
+  });
 }

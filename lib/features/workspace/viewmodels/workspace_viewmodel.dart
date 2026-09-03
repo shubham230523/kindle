@@ -4,6 +4,7 @@ import '../../project/models/agent.dart';
 import '../../project/models/agent_execution.dart';
 import '../../project/models/task.dart';
 import '../../../core/services/agent_simulator_service.dart';
+import '../../../core/services/model_downloader_service.dart';
 
 import '../../project/models/phase.dart';
 import '../../project/models/development_plan.dart';
@@ -15,6 +16,7 @@ import '../../project/models/coding_result.dart';
 
 class WorkspaceViewModel extends ChangeNotifier {
   final AgentExecutionService _executionService;
+  final ModelDownloaderService _downloaderService = ModelDownloaderService();
   
   Project _project;
   Project get project => _project;
@@ -29,6 +31,12 @@ class WorkspaceViewModel extends ChangeNotifier {
     _isLocalAiMode = !_isLocalAiMode;
     notifyListeners();
   }
+
+  bool _isModelReady = false;
+  bool get isModelReady => _isModelReady;
+
+  Stream<DownloadProgress>? _downloadStream;
+  Stream<DownloadProgress>? get downloadStream => _downloadStream;
   
   AgentExecution? _activeExecution;
   AgentExecution? get activeExecution => _activeExecution;
@@ -48,6 +56,23 @@ class WorkspaceViewModel extends ChangeNotifier {
   
   WorkspaceViewModel(this._project, this._executionService) {
     _initializeFileSystem();
+    _checkModelStatus();
+  }
+
+  Future<void> _checkModelStatus() async {
+    _isModelReady = await _downloaderService.isModelDownloaded();
+    notifyListeners();
+  }
+
+  void downloadModel() {
+    _downloadStream = _downloaderService.downloadModel();
+    notifyListeners();
+  }
+
+  void onDownloadDismissed() {
+    _downloadStream = null;
+    _checkModelStatus();
+    notifyListeners();
   }
 
   void _initializeFileSystem() {
@@ -78,6 +103,12 @@ class WorkspaceViewModel extends ChangeNotifier {
       _generateDefaultPlan();
     } else {
       debugPrint('WorkspaceViewModel: Using existing plan with ${_project.developmentPlan!.phases.length} phases');
+    }
+
+    if (_isLocalAiMode && !_isModelReady) {
+      debugPrint('WorkspaceViewModel: Local AI Mode enabled but model not ready. Starting download.');
+      downloadModel();
+      return;
     }
 
     _isDeveloping = true;

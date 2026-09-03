@@ -15,13 +15,17 @@ export class GraphService {
     projectId: string,
     task: PlanTask,
     architecture: ArchitectureBlueprint,
-    strategy: 'BALANCED' | 'LOCAL_OPTIMIZED' = 'BALANCED'
+    strategy: 'BALANCED' | 'LOCAL_OPTIMIZED' = 'BALANCED',
+    delegate: boolean = false
   ): Promise<CodingResult> {
     socketService.emit(projectId, 'AGENT_PROGRESS', { message: `Decomposing task: ${task.title} using ${strategy} strategy...` });
 
     // 1. Decompose
     const decomposition = await decomposerAgent.decomposeTask(task, architecture, strategy);
     const subTasks = decomposition.subTasks;
+
+    // ...
+    // Pass delegate to executeSubTaskWithRetry
 
     socketService.emit(projectId, 'AGENT_PROGRESS', {
       message: `Decomposed into ${subTasks.length} granular sub-tasks.`,
@@ -54,7 +58,7 @@ export class GraphService {
         const wavePromises = readyTasks.map(st => {
           inProgress.add(st.id);
           console.log(`[GRAPH_SERVICE] 🚀 Starting sub-task: ${st.title} (${st.role})`);
-          return this.executeSubTaskWithRetry(projectId, st, architecture)
+          return this.executeSubTaskWithRetry(projectId, st, architecture, delegate)
             .then(res => {
               results.set(st.id, res);
               completed.add(st.id);
@@ -93,7 +97,8 @@ export class GraphService {
   private async executeSubTaskWithRetry(
     projectId: string,
     subTask: SubTask,
-    architecture: ArchitectureBlueprint
+    architecture: ArchitectureBlueprint,
+    delegate: boolean = false
   ): Promise<CodingResult> {
     let lastError: any;
 
@@ -112,7 +117,8 @@ export class GraphService {
             acceptanceCriteria: subTask.acceptanceCriteria,
             role: subTask.role
           },
-          existingFiles
+          existingFiles,
+          delegate
         });
       } catch (error: any) {
         lastError = error;
