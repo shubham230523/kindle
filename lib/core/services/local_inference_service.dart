@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:ffi';
 import 'package:flutter/foundation.dart';
 import 'package:llama_cpp_dart/llama_cpp_dart.dart';
 
@@ -13,12 +14,26 @@ class LocalInferenceService {
     // Normalize path for Windows
     final normalizedPath = Platform.isWindows ? modelPath.replaceAll('/', '\\') : modelPath;
     
+    // Manual loading into the process to resolve symbols
+    if (Platform.isWindows) {
+      try {
+        final exeDir = File(Platform.resolvedExecutable).parent.path;
+        // Load in correct order: ggml then llama
+        DynamicLibrary.open('$exeDir\\ggml.dll');
+        DynamicLibrary.open('$exeDir\\llama.dll');
+        debugPrint('LocalInferenceService: ✅ DLLs pre-loaded into process');
+      } catch (e) {
+        debugPrint('LocalInferenceService: ⚠️ DLL pre-load warning: $e');
+      }
+    }
+
     debugPrint('LocalInferenceService: Initializing with model at $normalizedPath');
     try {
-      _engine = await LlamaEngine.spawn(
+      // Use spawnFromProcess which looks at the already-loaded libraries in the process memory
+      _engine = await LlamaEngine.spawnFromProcess(
         modelParams: ModelParams(
           path: normalizedPath,
-          gpuLayers: 0, // Force CPU to avoid Windows GPU driver issues
+          gpuLayers: 0,
         ),
         contextParams: const ContextParams(
           nCtx: 2048,
