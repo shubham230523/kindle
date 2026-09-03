@@ -21,6 +21,10 @@ class OnboardingOverlay extends StatelessWidget {
           child: StreamBuilder<DownloadProgress>(
             stream: progressStream,
             builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                debugPrint('OnboardingOverlay: Stream Error: ${snapshot.error}');
+              }
+              
               final progress = snapshot.data;
               final isError = progress?.error != null;
               final isCompleted = progress?.isCompleted ?? false;
@@ -66,9 +70,27 @@ class OnboardingOverlay extends StatelessWidget {
                     ),
                   const SizedBox(height: 48),
                   if (isError)
-                    ElevatedButton(
-                      onPressed: onDismiss,
-                      child: const Text('Cancel & Close'),
+                    Column(
+                      children: [
+                        ElevatedButton.icon(
+                          onPressed: () {
+                            onDismiss();
+                            // This depends on how we want to trigger retry.
+                            // For now, dismissing allows the user to click "Start Development" again.
+                          },
+                          icon: const Icon(Icons.refresh),
+                          label: const Text('Try Again'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            foregroundColor: Colors.white,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        TextButton(
+                          onPressed: onDismiss,
+                          child: const Text('Cancel', style: TextStyle(color: Colors.white70)),
+                        ),
+                      ],
                     ),
                 ],
               );

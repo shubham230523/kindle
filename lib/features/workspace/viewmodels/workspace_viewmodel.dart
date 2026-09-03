@@ -69,10 +69,15 @@ class WorkspaceViewModel extends ChangeNotifier {
     notifyListeners();
   }
 
-  void onDownloadDismissed() {
+  void onDownloadDismissed() async {
     _downloadStream = null;
-    _checkModelStatus();
+    await _checkModelStatus();
     notifyListeners();
+    
+    if (_isModelReady) {
+      debugPrint('WorkspaceViewModel: Model ready after download. Resuming development.');
+      startDevelopment();
+    }
   }
 
   void _initializeFileSystem() {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../viewmodels/workspace_viewmodel.dart';
 import '../../../core/services/agent_simulator_service.dart';
 import '../../../core/services/backend_agent_service.dart';
@@ -115,9 +116,11 @@ class _ProjectWorkspaceShellState extends State<ProjectWorkspaceShell> {
     return ListenableBuilder(
       listenable: _viewModel,
       builder: (context, _) {
-        return Stack(
-          children: [
-            Scaffold(
+        return ChangeNotifierProvider.value(
+          value: _viewModel,
+          child: Stack(
+            children: [
+              Scaffold(
               body: Row(
             children: [
               if (!isMobile)
@@ -238,7 +241,7 @@ class _ProjectWorkspaceShellState extends State<ProjectWorkspaceShell> {
                 onDismiss: () => _viewModel.onDownloadDismissed(),
               ),
           ],
-        );
+        ));
       },
     );
   }
