@@ -36,7 +36,7 @@ class LocalInferenceService {
           gpuLayers: 0,
         ),
         contextParams: const ContextParams(
-          nCtx: 2048,
+          nCtx: 8192, // Increased from 2048 to allow for larger code files
         ),
       );
       
@@ -61,7 +61,7 @@ class LocalInferenceService {
       chat.addSystem(systemPrompt);
       chat.addUser(userPrompt);
       
-      await for (final event in chat.generate(maxTokens: 2048)) {
+      await for (final event in chat.generate(maxTokens: 8192)) {
         if (event is TokenEvent) {
           if (event.text.isNotEmpty) {
             yield event.text;

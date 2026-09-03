@@ -209,19 +209,37 @@ class BackendAgentService implements AgentExecutionService {
     }
 
     try {
-      // Attempt to find the first valid JSON block in the output
+      // 1. Extract the JSON block reliably
       String jsonContent = resultString;
       final start = resultString.indexOf('{');
       if (start != -1) {
         int depth = 0;
+        bool inString = false;
+        bool escaped = false;
         int end = -1;
+
         for (int i = start; i < resultString.length; i++) {
-          if (resultString[i] == '{') depth++;
-          else if (resultString[i] == '}') depth--;
-          
-          if (depth == 0) {
-            end = i;
-            break;
+          final char = resultString[i];
+          if (escaped) {
+            escaped = false;
+            continue;
+          }
+          if (char == '\\') {
+            escaped = true;
+            continue;
+          }
+          if (char == '"') {
+            inString = !inString;
+            continue;
+          }
+          if (!inString) {
+            if (char == '{') depth++;
+            else if (char == '}') depth--;
+            
+            if (depth == 0) {
+              end = i;
+              break;
+            }
           }
         }
         if (end != -1) {
@@ -229,7 +247,9 @@ class BackendAgentService implements AgentExecutionService {
         }
       }
 
-      final resultMap = jsonDecode(_sanitizeJson(jsonContent));
+      // 2. Sanitize and Decode
+      final sanitized = _sanitizeJson(jsonContent);
+      final resultMap = jsonDecode(sanitized);
       final dynamic finalResult = isCodingTask ? CodingResult.fromMap(resultMap) : resultMap;
       
       yield AgentExecution(
@@ -255,31 +275,58 @@ class BackendAgentService implements AgentExecutionService {
   }
 
   String _sanitizeJson(String input) {
-    // 1. Remove markdown code block markers
-    input = input.replaceAll('```json', '').replaceAll('```', '');
+    // A. Clean markdown and artifacts
+    input = input.replaceAll('```json', '').replaceAll('```', '').trim();
 
-    // 2. Handle Dart raw string markers: r""" ... """ and r" ... "
-    input = input.replaceAllMapped(RegExp(r'r"""([\s\S]*?)"""'), (m) => jsonEncode(m.group(1)));
-    input = input.replaceAllMapped(RegExp(r'r"([\s\S]*?)"'), (m) => jsonEncode(m.group(1)));
+    // B. State-machine to fix literal newlines in strings without breaking valid JSON
+    StringBuffer buffer = StringBuffer();
+    bool inString = false;
+    bool escaped = false;
     
-    // 3. Handle standard triple quotes: """ ... """
-    input = input.replaceAllMapped(RegExp(r'"""([\s\S]*?)"""'), (m) => jsonEncode(m.group(1)));
-
-    // 4. Handle literal newlines inside double-quoted values.
-    // We look for : followed by " and then a block that contains newlines
-    // and ends with " followed by a comma, brace, or bracket.
-    final jsonValuePattern = RegExp(r':\s*"([\s\S]*?)"\s*(?=[,\]}])');
-    input = input.replaceAllMapped(jsonValuePattern, (match) {
-      final value = match.group(1) ?? '';
-      if (value.contains('\n') || value.contains('\r')) {
-        // Encode properly to escape newlines, quotes, etc.
-        return ': ' + jsonEncode(value);
+    for (int i = 0; i < input.length; i++) {
+      String char = input[i];
+      if (inString) {
+        if (escaped) {
+          buffer.write(char);
+          escaped = false;
+        } else if (char == '\\') {
+          buffer.write(char);
+          escaped = true;
+        } else if (char == '"') {
+          buffer.write(char);
+          inString = false;
+        } else if (char == '\n') {
+          buffer.write('\\n'); // Escape literal newline
+        } else if (char == '\r') {
+          buffer.write('\\r'); // Escape literal carriage return
+        } else {
+          buffer.write(char);
+        }
+      } else {
+        if (char == '"') inString = true;
+        buffer.write(char);
       }
-      return match.group(0)!;
-    });
+    }
+    input = buffer.toString();
 
-    // 5. Remove trailing commas in objects/arrays
+    // C. Handle Dart raw strings (common coder model hallucination)
+    input = input.replaceAllMapped(RegExp(r'r"""([\s\S]*?)"""'), (m) => jsonEncode(m.group(1)!));
+    input = input.replaceAllMapped(RegExp(r'r"([\s\S]*?)"'), (m) => jsonEncode(m.group(1)!));
+    input = input.replaceAllMapped(RegExp(r'"""([\s\S]*?)"""'), (m) => jsonEncode(m.group(1)!));
+
+    // D. Remove trailing commas
     input = input.replaceAllMapped(RegExp(r',\s*([\]}])'), (match) => match.group(1)!);
+
+    // E. Emergency repair for truncated JSON
+    if (!input.endsWith('}')) {
+      if (input.split('"').length % 2 == 0) input += '"';
+      int openBraces = '{'.allMatches(input).length;
+      int closeBraces = '}'.allMatches(input).length;
+      int openBrackets = '['.allMatches(input).length;
+      int closeBrackets = ']'.allMatches(input).length;
+      for (int i = 0; i < (openBrackets - closeBrackets); i++) input += ']';
+      for (int i = 0; i < (openBraces - closeBraces); i++) input += '}';
+    }
 
     return input;
   }
