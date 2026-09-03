@@ -44,9 +44,15 @@ export class GraphService {
       }
 
       if (readyTasks.length > 0) {
+        console.log(`[GRAPH_SERVICE] 🌊 Executing wave of ${readyTasks.length} sub-tasks: ${readyTasks.map(t => t.title).join(', ')}`);
+        socketService.emit(projectId, 'AGENT_PROGRESS', {
+          message: `Executing parallel wave: ${readyTasks.length} sub-tasks starting...`
+        });
+
         // Execute wave in parallel
         const wavePromises = readyTasks.map(st => {
           inProgress.add(st.id);
+          console.log(`[GRAPH_SERVICE] 🚀 Starting sub-task: ${st.title} (${st.role})`);
           return this.executeSubTaskWithRetry(projectId, st, architecture)
             .then(res => {
               results.set(st.id, res);

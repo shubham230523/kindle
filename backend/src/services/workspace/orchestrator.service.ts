@@ -11,12 +11,16 @@ import { AgentExecution, ExecutionStatus } from '../../models/execution.js';
 import { BuildStatus } from '../../models/build.js';
 import { TestStatus } from '../../models/test.js';
 import { AiError } from '../../models/ai.js';
+import { env } from '../../config/env.js';
 
 export class DevelopmentOrchestrator {
   private readonly MAX_RETRIES = 3;
 
   async runTask(projectId: string, task: any, architecture: any): Promise<AgentExecution> {
     const executionId = `exec_${Date.now()}`;
+    const isSimulation = env.isSimulation;
+    const modePrefix = isSimulation ? '[SIMULATED] ' : '';
+
     let execution: AgentExecution = {
       id: executionId,
       projectId,
@@ -24,10 +28,10 @@ export class DevelopmentOrchestrator {
       agentId: 'kindle-orchestrator-v2',
       status: ExecutionStatus.planning,
       startedAt: new Date().toISOString(),
-      logs: [executionService.createLog(`Initiating autonomous execution for: ${task.title}`)],
+      logs: [executionService.createLog(`${modePrefix}Initiating autonomous execution for: ${task.title}`)],
     };
 
-    socketService.emit(projectId, 'AGENT_STARTED', { taskId: task.id, title: task.title });
+    socketService.emit(projectId, 'AGENT_STARTED', { taskId: task.id, title: task.title, isSimulation });
 
     let retryCount = 0;
     let isVerified = false;
@@ -135,7 +139,10 @@ export class DevelopmentOrchestrator {
 
       if (isVerified) {
         execution.status = ExecutionStatus.completed;
-        const finalMsg = 'Autonomous verification successful. Task finalized.';
+        const finalMsg = `${modePrefix}Autonomous verification successful. Task finalized.`;
+        if (isSimulation) {
+          execution.logs.push(executionService.createLog(`${modePrefix}Cost Saved: This run avoided ~7-10 OpenRouter API requests.`));
+        }
         execution.logs.push(executionService.createLog(finalMsg));
         socketService.emit(projectId, 'AGENT_PROGRESS', { status: execution.status, message: finalMsg });
       } else {

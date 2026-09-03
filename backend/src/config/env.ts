@@ -8,4 +8,9 @@ export const env = {
   OLLAMA_MODEL: process.env.OLLAMA_MODEL || 'llama2',
   OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || '',
   OPENROUTER_MODEL: process.env.OPENROUTER_MODEL || 'minimax/minimax-m3:free',
+  ENABLE_AI_CACHE: process.env.ENABLE_AI_CACHE === 'true',
+  get isSimulation() {
+    return this.OPENROUTER_API_KEY === 'open-router-api-key' &&
+           this.OPENROUTER_MODEL === 'model';
+  }
 };
