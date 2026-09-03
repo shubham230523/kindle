@@ -16,7 +16,7 @@ import { env } from '../../config/env.js';
 export class DevelopmentOrchestrator {
   private readonly MAX_RETRIES = 3;
 
-  async runTask(projectId: string, task: any, architecture: any): Promise<AgentExecution> {
+  async runTask(projectId: string, task: any, architecture: any, isLocalMode: boolean = false): Promise<AgentExecution> {
     const executionId = `exec_${Date.now()}`;
     const isSimulation = env.isSimulation;
     const modePrefix = isSimulation ? '[SIMULATED] ' : '';
@@ -51,16 +51,18 @@ export class DevelopmentOrchestrator {
 
           // 1. Generate Code (using Graph Service)
           execution.status = ExecutionStatus.running;
-          const progressMsg = debugContext ? 'Generating targeted fix...' : 'Executing multi-agent task graph...';
+          const strategy = isLocalMode ? 'LOCAL_OPTIMIZED' : 'BALANCED';
+          const progressMsg = debugContext
+            ? 'Generating targeted fix...'
+            : `Executing multi-agent task graph (${strategy})...`;
+
           execution.logs.push(executionService.createLog(progressMsg));
           socketService.emit(projectId, 'AGENT_PROGRESS', { status: execution.status, message: progressMsg });
           await executionService.recordExecution(execution);
 
           let codingResult;
           if (debugContext) {
-            // If we are healing, we might still use the coding agent directly for the fix
-            // or we could re-run a specific sub-task if we tracked them.
-            // For now, let's use the coding agent for targeted fixes.
+            // ...
             const existingFiles = await workspaceService.listProjectFiles(projectId);
             codingResult = await codingAgent.executeTask({
               projectId,
@@ -70,7 +72,7 @@ export class DevelopmentOrchestrator {
               debugContext,
             });
           } else {
-            codingResult = await graphService.executeTaskGraph(projectId, task, architecture);
+            codingResult = await graphService.executeTaskGraph(projectId, task, architecture, strategy);
           }
 
           // 2. Apply Changes

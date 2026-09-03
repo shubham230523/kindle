@@ -21,6 +21,7 @@ class BackendAgentService implements AgentExecutionService {
     Agent agent, {
     required Project project,
     List<String> existingFiles = const [],
+    bool isLocalMode = false,
   }) async* {
     final executionId = 'exec_${DateTime.now().millisecondsSinceEpoch}';
     final startedAt = DateTime.now();
@@ -68,6 +69,7 @@ class BackendAgentService implements AgentExecutionService {
         'task': task.toMap(),
         'architecture': project.architecture?.toMap(),
         'existingFiles': existingFiles,
+        'isLocalMode': isLocalMode,
       });
 
       final streamedResponse = await _client.send(request);

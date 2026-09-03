@@ -28,7 +28,8 @@ export class SimulationProvider implements AiProvider {
     if (systemPrompt.includes('Planning Agent')) {
       content = this.simulatePlanningResponse(userPrompt);
     } else if (systemPrompt.includes('Decomposer Agent')) {
-      content = this.simulateDecompositionResponse(userPrompt);
+      console.log(`[SIMULATION] Decomposer detected. System prompt length: ${systemPrompt.length}`);
+      content = this.simulateDecompositionResponse(systemPrompt, userPrompt);
     } else if (systemPrompt.includes('Coding Agent')) {
       content = this.simulateCodingResponse(systemPrompt, userPrompt);
     } else if (systemPrompt.includes('Integrator Agent')) {
@@ -95,7 +96,72 @@ export class SimulationProvider implements AiProvider {
     }, null, 2);
   }
 
-  private simulateDecompositionResponse(input: string): string {
+  private simulateDecompositionResponse(system: string, user: string): string {
+    const isAtomic = system.includes('ATOMIC') || system.includes('LOCAL_OPTIMIZED');
+
+    if (isAtomic) {
+      return JSON.stringify({
+        subTasks: [
+          {
+            id: "st1",
+            parentId: "t1",
+            title: "Todo Entity",
+            description: "Create todo_entity.dart",
+            role: "DOMAIN",
+            dependencies: [],
+            expectedOutput: "todo_entity.dart",
+            acceptanceCriteria: ["Valid class"],
+            estimatedComplexity: "low"
+          },
+          {
+            id: "st2",
+            parentId: "t1",
+            title: "Todo Repository Interface",
+            description: "Create todo_repository.dart",
+            role: "DOMAIN",
+            dependencies: ["st1"],
+            expectedOutput: "todo_repository.dart",
+            acceptanceCriteria: ["Valid abstract class"],
+            estimatedComplexity: "low"
+          },
+          {
+            id: "st3",
+            parentId: "t1",
+            title: "Todo Local Data Source",
+            description: "Create local_data_source.dart",
+            role: "DATA",
+            dependencies: ["st1"],
+            expectedOutput: "local_data_source.dart",
+            acceptanceCriteria: ["Handles persistence"],
+            estimatedComplexity: "medium"
+          },
+          {
+            id: "st4",
+            parentId: "t1",
+            title: "Todo Page UI",
+            description: "Create todo_page.dart",
+            role: "UI",
+            dependencies: ["st2"],
+            expectedOutput: "todo_page.dart",
+            acceptanceCriteria: ["Visual list"],
+            estimatedComplexity: "medium"
+          },
+          {
+            id: "st5",
+            parentId: "t1",
+            title: "Integration Layer",
+            description: "Wire up BLoC and DI",
+            role: "INTEGRATION",
+            dependencies: ["st3", "st4"],
+            expectedOutput: "main.dart",
+            acceptanceCriteria: ["App runs"],
+            estimatedComplexity: "low"
+          }
+        ],
+        explanation: "Atomic decomposition into single-file units for local model optimization."
+      }, null, 2);
+    }
+
     return JSON.stringify({
       subTasks: [
         {

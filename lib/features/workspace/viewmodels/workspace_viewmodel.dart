@@ -21,6 +21,14 @@ class WorkspaceViewModel extends ChangeNotifier {
   
   bool _isDeveloping = false;
   bool get isDeveloping => _isDeveloping;
+
+  bool _isLocalAiMode = false;
+  bool get isLocalAiMode => _isLocalAiMode;
+
+  void toggleLocalAiMode() {
+    _isLocalAiMode = !_isLocalAiMode;
+    notifyListeners();
+  }
   
   AgentExecution? _activeExecution;
   AgentExecution? get activeExecution => _activeExecution;
@@ -101,6 +109,7 @@ class WorkspaceViewModel extends ChangeNotifier {
           agent,
           project: _project,
           existingFiles: existingFilePaths,
+          isLocalMode: _isLocalAiMode,
         )) {
           if (!_isDeveloping) {
             debugPrint('WorkspaceViewModel: Development stopped by user mid-task');

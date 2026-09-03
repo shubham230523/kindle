@@ -43,7 +43,7 @@ export class CodingAgent {
   `;
   }
 
-  async executeTask(request: CodingRequest, onChunk?: (chunk: string) => void): Promise<CodingResult> {
+  async executeTask(request: CodingRequest, onChunk?: (chunk: string) => void, providerName?: string): Promise<CodingResult> {
     let userInput = `
       ARCHITECTURE PATTERN: ${request.architecture.pattern}
       LAYERS: ${request.architecture.layers.join(', ')}
@@ -76,7 +76,7 @@ export class CodingAgent {
         temperature: 0,
         maxTokens: 16384,
         reasoning: false
-      }, onChunk);
+      }, onChunk, providerName);
 
       try {
         let result: CodingResult;

@@ -31,7 +31,7 @@ export default async function codingRoutes(fastify: FastifyInstance) {
   }
 
   fastify.post('/coding/execute', { preHandler: [authGuard] }, async (request, reply) => {
-    const codingRequest = request.body as CodingRequest;
+    const codingRequest = request.body as CodingRequest & { isLocalMode?: boolean };
     const userId = request.user!.id;
 
     if (!codingRequest.projectId || !codingRequest.task || !codingRequest.architecture) {
@@ -42,6 +42,7 @@ export default async function codingRoutes(fastify: FastifyInstance) {
       await checkOwnership(codingRequest.projectId, userId);
 
       let headersSent = false;
+      const providerName = codingRequest.isLocalMode ? 'local' : undefined;
 
       const result = await codingAgent.executeTask(codingRequest, (chunk) => {
         if (!headersSent) {

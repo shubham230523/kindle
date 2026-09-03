@@ -14,12 +14,13 @@ export class GraphService {
   async executeTaskGraph(
     projectId: string,
     task: PlanTask,
-    architecture: ArchitectureBlueprint
+    architecture: ArchitectureBlueprint,
+    strategy: 'BALANCED' | 'LOCAL_OPTIMIZED' = 'BALANCED'
   ): Promise<CodingResult> {
-    socketService.emit(projectId, 'AGENT_PROGRESS', { message: `Decomposing task: ${task.title}...` });
+    socketService.emit(projectId, 'AGENT_PROGRESS', { message: `Decomposing task: ${task.title} using ${strategy} strategy...` });
 
     // 1. Decompose
-    const decomposition = await decomposerAgent.decomposeTask(task, architecture);
+    const decomposition = await decomposerAgent.decomposeTask(task, architecture, strategy);
     const subTasks = decomposition.subTasks;
 
     socketService.emit(projectId, 'AGENT_PROGRESS', {

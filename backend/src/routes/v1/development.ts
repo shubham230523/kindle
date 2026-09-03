@@ -14,10 +14,11 @@ export default async function developmentRoutes(fastify: FastifyInstance) {
   }
 
   fastify.post('/development/run-task', { preHandler: [authGuard] }, async (request, reply) => {
-    const { projectId, task, architecture } = request.body as {
+    const { projectId, task, architecture, isLocalMode } = request.body as {
       projectId: string;
       task: any;
       architecture: any;
+      isLocalMode?: boolean;
     };
     const userId = request.user!.id;
 
@@ -30,7 +31,7 @@ export default async function developmentRoutes(fastify: FastifyInstance) {
 
     try {
       await checkOwnership(projectId, userId);
-      const execution = await developmentOrchestrator.runTask(projectId, task, architecture);
+      const execution = await developmentOrchestrator.runTask(projectId, task, architecture, isLocalMode);
       return execution;
     } catch (error: any) {
       return reply.status(error.message === 'Unauthorized' ? 403 : 500).send({

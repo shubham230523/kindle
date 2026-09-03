@@ -3,6 +3,7 @@ import { AiProvider } from './ai-provider.interface.js';
 import { OllamaProvider } from './ollama.provider.js';
 import { OpenRouterProvider } from './openrouter.provider.js';
 import { SimulationProvider } from './simulation.provider.js';
+import { LocalLlamaProvider } from './local.provider.js';
 import { env } from '../../config/env.js';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -20,6 +21,7 @@ export class AiService {
     this.registerProvider(new OllamaProvider());
     this.registerProvider(new OpenRouterProvider());
     this.registerProvider(new SimulationProvider());
+    this.registerProvider(new LocalLlamaProvider());
     // Cache is located in the backend root
     this.cacheDir = path.resolve(__dirname, '../../../../.cache/ai');
   }
@@ -38,9 +40,17 @@ export class AiService {
       }
     }
 
-    const name = env.isSimulation ? 'simulation' : (providerName || this.defaultProvider);
+    const isSimulation = env.isSimulation;
 
-    if (env.isSimulation) {
+    // Determine provider: Simulation > Explicitly requested > Local (if path set) > Default
+    let name = providerName || this.defaultProvider;
+    if (isSimulation) {
+      name = 'simulation';
+    } else if (!providerName && env.LOCAL_MODEL_PATH) {
+      name = 'local';
+    }
+
+    if (isSimulation) {
       console.log(`[AI_SERVICE] 🔄 REDIRECTING TO SIMULATION (Requested: ${providerName || this.defaultProvider})`);
       const taskMatch = request.messages.find(m => m.role === 'user')?.content.match(/TASK: (.*)/);
       if (taskMatch) {

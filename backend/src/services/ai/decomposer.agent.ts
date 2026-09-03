@@ -5,7 +5,18 @@ import { PlanTask, DecompositionResult } from '../../models/plan.js';
 import { ArchitectureBlueprint } from '../../models/architecture.js';
 
 export class DecomposerAgent {
-  private readonly systemPrompt = `
+  private getSystemPrompt(strategy: 'BALANCED' | 'LOCAL_OPTIMIZED' = 'BALANCED') {
+    const strategyInstruction = strategy === 'LOCAL_OPTIMIZED'
+      ? `STRATEGY: ATOMIC (LOCAL MODEL OPTIMIZED)
+         - MANDATORY: Break down tasks into ATOMIC units.
+         - One sub-task should typically result in only 1 or 2 specific source files.
+         - Do not group multiple screens or large repositories into a single sub-task.
+         - The goal is to keep the output small enough for a low-parameter local model to generate without logical errors.`
+      : `STRATEGY: BALANCED
+         - No single sub-task should handle more than 20% of the overall feature complexity.
+         - UI tasks: Limit to 1-2 screens or 5 reusable components per sub-task.`;
+
+    return `
     You are the Kindle Decomposer Agent. Your goal is to break down a high-level development task into granular, layer-specific sub-tasks.
 
     CRITICAL RULE: YOU MUST ONLY OUTPUT VALID JSON.
@@ -13,10 +24,8 @@ export class DecomposerAgent {
 
     Guidelines for Decomposition:
     1. STACK-AWARE: Divide the task into sub-tasks based on architecture layers (UI, DOMAIN, DATA, INTEGRATION).
-    2. CHUNKING (LOAD BALANCING):
-       - No single sub-task should handle more than 20% of the overall feature complexity.
-       - UI tasks: Limit to 1-2 screens or 5 reusable components per sub-task.
-       - Data/Domain: Split complex logic into multiple interfaces or repositories if needed.
+    2. CHUNKING & STRATEGY:
+       ${strategyInstruction}
     3. DEPENDENCY GRAPH: Clearly define dependencies between sub-tasks (e.g., UI depends on DOMAIN).
     4. INTEGRATION FOCUS: Always include at least one INTEGRATION sub-task to wire everything together (DI, Routing).
     5. NO CONVERSATION: Return only the JSON object.
@@ -31,7 +40,7 @@ export class DecomposerAgent {
           "description": "Granular technical details",
           "role": "UI" | "DOMAIN" | "DATA" | "INTEGRATION",
           "dependencies": ["list_of_subtask_ids"],
-          "expectedOutput": "Specific files or functionality",
+          "expectedOutput": "Specific files or functionality (e.g., user_model.dart)",
           "acceptanceCriteria": ["criterion 1"],
           "estimatedComplexity": "low" | "medium" | "high"
         }
@@ -39,8 +48,13 @@ export class DecomposerAgent {
       "explanation": "Brief reasoning for this specific decomposition"
     }
   `;
+  }
 
-  async decomposeTask(task: PlanTask, architecture: ArchitectureBlueprint): Promise<DecompositionResult> {
+  async decomposeTask(
+    task: PlanTask,
+    architecture: ArchitectureBlueprint,
+    strategy: 'BALANCED' | 'LOCAL_OPTIMIZED' = 'BALANCED'
+  ): Promise<DecompositionResult> {
     const userInput = `
       TASK TO DECOMPOSE:
       Title: ${task.title}
@@ -52,7 +66,7 @@ export class DecomposerAgent {
     `;
 
     const messages: AiChatMessage[] = [
-      { role: 'system', content: this.systemPrompt },
+      { role: 'system', content: this.getSystemPrompt(strategy) },
       { role: 'user', content: userInput }
     ];
 

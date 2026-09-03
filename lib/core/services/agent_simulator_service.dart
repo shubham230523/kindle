@@ -13,6 +13,7 @@ abstract class AgentExecutionService {
     Agent agent, {
     required Project project,
     List<String> existingFiles = const [],
+    bool isLocalMode = false,
   });
 }
 
@@ -25,6 +26,7 @@ class AgentSimulatorService implements AgentExecutionService {
     Agent agent, {
     required Project project,
     List<String> existingFiles = const [],
+    bool isLocalMode = false,
   }) async* {
     final timestamp = DateTime.now().toIso8601String().substring(11, 19);
     debugPrint('[$timestamp] AgentSimulator: Starting task ${task.id} with agent ${agent.name}');
