@@ -234,14 +234,8 @@ export class SimulationProvider implements AiProvider {
 
   private simulateIntegrationResponse(input: string): string {
     return JSON.stringify({
-      changes: [
-        {
-          path: "lib/main.dart",
-          content: "// Simulated main.dart with integration logic",
-          type: "modify"
-        }
-      ],
-      explanation: "Integrated all simulated components and wired up DI."
+      changes: [],
+      explanation: "Delegated Integration: Use the results of specialized agents to wire the system."
     }, null, 2);
   }
 }

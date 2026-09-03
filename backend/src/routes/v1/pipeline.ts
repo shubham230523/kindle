@@ -21,7 +21,11 @@ export default async function pipelineRoutes(fastify: FastifyInstance) {
   });
 
   fastify.post('/pipeline/advance', { preHandler: [authGuard] }, async (request, reply) => {
-    const { projectId, userInput } = request.body as { projectId: string; userInput?: string };
+    const { projectId, userInput, isLocalMode } = request.body as {
+      projectId: string;
+      userInput?: string;
+      isLocalMode?: boolean;
+    };
     const userId = request.user!.id;
 
     if (!projectId) {
@@ -29,7 +33,7 @@ export default async function pipelineRoutes(fastify: FastifyInstance) {
     }
 
     try {
-      const state = await kindlePipeline.advancePipeline(projectId, userId, userInput);
+      const state = await kindlePipeline.advancePipeline(projectId, userId, userInput, isLocalMode);
       return state;
     } catch (error: any) {
       return reply.status(error.message === 'Unauthorized access to project' ? 403 : 500).send({ error: error.message });

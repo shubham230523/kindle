@@ -53,7 +53,8 @@ export class DecomposerAgent {
   async decomposeTask(
     task: PlanTask,
     architecture: ArchitectureBlueprint,
-    strategy: 'BALANCED' | 'LOCAL_OPTIMIZED' = 'BALANCED'
+    strategy: 'BALANCED' | 'LOCAL_OPTIMIZED' = 'BALANCED',
+    delegate?: boolean
   ): Promise<DecompositionResult> {
     const userInput = `
       TASK TO DECOMPOSE:
@@ -65,8 +66,22 @@ export class DecomposerAgent {
       Modules: ${architecture.modules.map(m => m.name).join(', ')}
     `;
 
+    const systemPrompt = this.getSystemPrompt(strategy);
+
+    if (delegate) {
+      console.log(`[DECOMPOSER_AGENT] 🚩 Delegating prompt to client for task: ${task.title}`);
+      return {
+        subTasks: [],
+        explanation: 'Delegating to client-side local LLM.',
+        promptDelegation: {
+          systemPrompt,
+          userPrompt: userInput
+        }
+      };
+    }
+
     const messages: AiChatMessage[] = [
-      { role: 'system', content: this.getSystemPrompt(strategy) },
+      { role: 'system', content: systemPrompt },
       { role: 'user', content: userInput }
     ];
 

@@ -40,7 +40,7 @@ export class PlanningAgent {
     }
   `;
 
-  async generatePlan(request: PlanningRequest): Promise<DevelopmentPlanResult> {
+  async generatePlan(request: PlanningRequest, delegate?: boolean): Promise<DevelopmentPlanResult> {
     const userInput = `
       PRODUCT: ${request.product.name}
       DESCRIPTION: ${request.product.description}
@@ -49,6 +49,17 @@ export class PlanningAgent {
       LAYERS: ${request.architecture.layers.join(', ')}
       MODULES: ${request.architecture.modules.map(m => m.name).join(', ')}
     `;
+
+    if (delegate) {
+      console.log(`[PLANNING_AGENT] 🚩 Delegating prompt to client for product: ${request.product.name}`);
+      return {
+        phases: [],
+        promptDelegation: {
+          systemPrompt: this.systemPrompt,
+          userPrompt: userInput
+        }
+      };
+    }
 
     const messages: AiChatMessage[] = [
       { role: 'system', content: this.systemPrompt },

@@ -18,6 +18,10 @@ export interface ArchitectureBlueprint {
   dataFlow: string;
   apiStrategy: string;
   reasoning?: string;
+  promptDelegation?: {
+    systemPrompt: string;
+    userPrompt: string;
+  };
 }
 
 export interface ArchitectureRequest {

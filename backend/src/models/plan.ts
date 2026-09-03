@@ -24,6 +24,10 @@ export interface SubTask {
 export interface DecompositionResult {
   subTasks: SubTask[];
   explanation: string;
+  promptDelegation?: {
+    systemPrompt: string;
+    userPrompt: string;
+  };
 }
 
 export interface PlanPhase {
@@ -36,6 +40,10 @@ export interface PlanPhase {
 export interface DevelopmentPlanResult {
   phases: PlanPhase[];
   reasoning?: string;
+  promptDelegation?: {
+    systemPrompt: string;
+    userPrompt: string;
+  };
 }
 
 export interface PlanningRequest {

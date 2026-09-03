@@ -113,7 +113,8 @@ class BackendAgentService implements AgentExecutionService {
                     task, 
                     startedAt, 
                     delegation['systemPrompt'], 
-                    delegation['userPrompt']
+                    delegation['userPrompt'],
+                    isCodingTask: true // Currently only executeTask is used for streams
                   );
                 } else {
                   yield AgentExecution(
@@ -177,8 +178,9 @@ class BackendAgentService implements AgentExecutionService {
     Task task,
     DateTime startedAt,
     String systemPrompt,
-    String userPrompt,
-  ) async* {
+    String userPrompt, {
+    bool isCodingTask = false,
+  }) async* {
     yield AgentExecution(
       id: executionId,
       agentId: agent.id,
@@ -205,13 +207,22 @@ class BackendAgentService implements AgentExecutionService {
       userPrompt: userPrompt,
     )) {
       resultString += token;
-      // You could yield chunks here if the UI supported it
     }
 
     try {
-      final resultMap = jsonDecode(resultString);
-      final codingResult = CodingResult.fromMap(resultMap);
+      // Attempt to find JSON in the output if it's not pure JSON
+      String jsonContent = resultString;
+      if (!resultString.trim().startsWith('{')) {
+         final start = resultString.indexOf('{');
+         final end = resultString.lastIndexOf('}');
+         if (start != -1 && end != -1) {
+           jsonContent = resultString.substring(start, end + 1);
+         }
+      }
 
+      final resultMap = jsonDecode(jsonContent);
+      final dynamic finalResult = isCodingTask ? CodingResult.fromMap(resultMap) : resultMap;
+      
       yield AgentExecution(
         id: executionId,
         agentId: agent.id,
@@ -219,16 +230,17 @@ class BackendAgentService implements AgentExecutionService {
         status: ExecutionStatus.completed,
         startedAt: startedAt,
         completedAt: DateTime.now(),
-        result: codingResult,
+        result: finalResult,
         logs: [
           ExecutionLog(
             timestamp: DateTime.now(),
-            message: 'Local code generation complete!',
-            details: codingResult.explanation,
+            message: 'Local execution complete!',
+            details: resultMap['explanation'] ?? 'Successful on-device inference.',
           ),
         ],
       );
     } catch (e) {
+      debugPrint('Local AI Decode Error: $e\nRaw content: $resultString');
       throw Exception('Failed to parse local AI output: $e');
     }
   }

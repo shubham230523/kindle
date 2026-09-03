@@ -51,9 +51,11 @@ export class KindlePipelineService {
     return state;
   }
 
-  async advancePipeline(projectId: string, userId: string, userInput?: string): Promise<ProjectState> {
+  async advancePipeline(projectId: string, userId: string, userInput?: string, isLocalMode: boolean = false): Promise<ProjectState> {
     const state = await this.getProjectState(projectId, userId);
     if (!state) throw new Error('Project state not found');
+
+    const delegate = isLocalMode;
 
     switch (state.stage) {
       case PipelineStage.discovery:
@@ -86,7 +88,7 @@ export class KindlePipelineService {
           platforms: ['android', 'ios', 'web'],
           backend: state.technology!.recommendedBackend,
           database: state.technology!.recommendedDatabase
-        });
+        }, delegate);
         break;
 
       case PipelineStage.architecture:
@@ -102,13 +104,13 @@ export class KindlePipelineService {
             layers: state.architecture!.layers,
             modules: state.architecture!.modules
           }
-        });
+        }, delegate);
         break;
 
       case PipelineStage.planning:
         state.stage = PipelineStage.development;
         // Start background development orchestration
-        this.runFullDevelopment(state);
+        this.runFullDevelopment(state, isLocalMode);
         break;
 
       default:
@@ -120,12 +122,12 @@ export class KindlePipelineService {
     return state;
   }
 
-  private async runFullDevelopment(state: ProjectState) {
+  private async runFullDevelopment(state: ProjectState, isLocalMode: boolean = false) {
     if (!state.plan) return;
 
     for (const phase of state.plan.phases) {
       for (const task of phase.tasks) {
-        await developmentOrchestrator.runTask(state.id, task, state.architecture);
+        await developmentOrchestrator.runTask(state.id, task, state.architecture, isLocalMode);
       }
     }
 

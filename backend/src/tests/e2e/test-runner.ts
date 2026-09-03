@@ -36,19 +36,20 @@ async function runTest() {
       'test_project',
       todoTask,
       architecture,
-      'LOCAL_OPTIMIZED'
+      'LOCAL_OPTIMIZED',
+      true // Enable Delegation
     );
 
     // 3. Verify
-    console.log('\n✅ Test Completed Successfully!');
+    console.log('\n✅ Delegation Test Successful!');
     console.log('Explanation:', result.explanation);
-    console.log('Files Generated:', result.changes.length);
-    result.changes.forEach(c => console.log(`  - [${c.type}] ${c.path}`));
-
-    if (result.changes.length > 0) {
+    if (result.promptDelegation) {
+      console.log('🚩 Prompt Delegated to Client:');
+      console.log('   System Prompt Length:', result.promptDelegation.systemPrompt.length);
+      console.log('   User Prompt Snippet:', result.promptDelegation.userPrompt.substring(0, 100));
       process.exit(0);
     } else {
-      console.error('❌ Error: No files were generated.');
+      console.error('❌ Error: Result was not delegated.');
       process.exit(1);
     }
   } catch (error) {

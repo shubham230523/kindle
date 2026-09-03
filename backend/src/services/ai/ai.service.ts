@@ -51,10 +51,11 @@ export class AiService {
     }
 
     if (isSimulation) {
-      console.log(`[AI_SERVICE] 🔄 REDIRECTING TO SIMULATION (Requested: ${providerName || this.defaultProvider})`);
+      // Don't log "REDIRECTING TO SIMULATION" if it's actually just being used as a fallback for missing keys
+      // while delegation is handled at the Agent layer.
       const taskMatch = request.messages.find(m => m.role === 'user')?.content.match(/TASK: (.*)/);
       if (taskMatch) {
-        console.log(`[AI_SERVICE] 📝 Task: ${taskMatch[1]}`);
+        console.log(`[AI_SERVICE] 📝 Processing task: ${taskMatch[1]}`);
       }
     }
 

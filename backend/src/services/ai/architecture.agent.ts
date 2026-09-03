@@ -30,7 +30,7 @@ export class ArchitectureAgent {
     }
   `;
 
-  async generateBlueprint(request: ArchitectureRequest): Promise<ArchitectureBlueprint> {
+  async generateBlueprint(request: ArchitectureRequest, delegate?: boolean): Promise<ArchitectureBlueprint> {
     const userInput = `
       REQUIREMENTS: ${request.requirements.join(', ')}
       TECHNOLOGY: ${request.technology}
@@ -38,6 +38,22 @@ export class ArchitectureAgent {
       BACKEND: ${request.backend}
       DATABASE: ${request.database}
     `;
+
+    if (delegate) {
+      console.log(`[ARCHITECTURE_AGENT] 🚩 Delegating prompt to client for technology: ${request.technology}`);
+      return {
+        pattern: '',
+        layers: [],
+        modules: [],
+        dependencies: [],
+        dataFlow: '',
+        apiStrategy: '',
+        promptDelegation: {
+          systemPrompt: this.systemPrompt,
+          userPrompt: userInput
+        }
+      };
+    }
 
     const messages: AiChatMessage[] = [
       { role: 'system', content: this.systemPrompt },

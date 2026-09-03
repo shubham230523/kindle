@@ -89,7 +89,7 @@ export class GraphService {
     const existingFiles = await workspaceService.listProjectFiles(projectId);
     const allCodingResults = Array.from(results.values());
 
-    const finalResult = await integratorAgent.integrate(allCodingResults, architecture, existingFiles);
+    const finalResult = await integratorAgent.integrate(allCodingResults, architecture, existingFiles, delegate);
 
     return finalResult;
   }
