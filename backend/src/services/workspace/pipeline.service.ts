@@ -104,7 +104,7 @@ export class KindlePipelineService {
             layers: state.architecture!.layers,
             modules: state.architecture!.modules
           }
-        }, delegate);
+        }, isLocalMode); // Pass isLocalMode here
         break;
 
       case PipelineStage.planning:

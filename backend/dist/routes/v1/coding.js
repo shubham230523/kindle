@@ -31,7 +31,14 @@ export default async function codingRoutes(fastify) {
         try {
             await checkOwnership(codingRequest.projectId, userId);
             let headersSent = false;
-            const result = await codingAgent.executeTask(codingRequest, (chunk) => {
+            const isLocal = codingRequest.isLocalMode === true;
+            const providerName = isLocal ? 'local' : undefined;
+            // Map isLocalMode to delegate flag for the agent
+            const requestWithDelegate = {
+                ...codingRequest,
+                delegate: isLocal
+            };
+            const result = await codingAgent.executeTask(requestWithDelegate, (chunk) => {
                 if (!headersSent) {
                     // Set headers for Server-Sent Events (SSE)
                     reply.raw.setHeader('Content-Type', 'text/event-stream');
@@ -51,9 +58,17 @@ export default async function codingRoutes(fastify) {
                 });
             });
             if (!headersSent) {
-                // If we haven't sent headers yet (agent finished very quickly or without chunks),
-                // return as standard JSON to avoid "object type" error on raw write
-                return result;
+                // CRITICAL: Even for instant delegation, we MUST use SSE protocol
+                // so the client's Stream handler recognizes the instruction.
+                reply.raw.setHeader('Content-Type', 'text/event-stream');
+                reply.raw.setHeader('Cache-Control', 'no-cache');
+                reply.raw.setHeader('Connection', 'keep-alive');
+                reply.raw.setHeader('Access-Control-Allow-Origin', '*');
+                reply.raw.flushHeaders();
+                const finalData = JSON.stringify({ type: 'result', content: result });
+                reply.raw.write(`data: ${finalData}\n\n`);
+                reply.raw.end();
+                return;
             }
             // Send the final result as the last SSE event
             const finalData = JSON.stringify({ type: 'result', content: result });
@@ -135,5 +150,10 @@ export default async function codingRoutes(fastify) {
                 error: error.message,
             });
         }
+    });
+    fastify.post('/coding/submit-result', { preHandler: [authGuard] }, async (request, reply) => {
+        const { projectId, taskId, result } = request.body;
+        console.log(`[CODING_ROUTE] 📥 Received client-side result for task: ${taskId}`);
+        return { status: 'success' };
     });
 }

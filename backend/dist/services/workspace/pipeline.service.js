@@ -42,10 +42,11 @@ export class KindlePipelineService {
         await this.saveProjectState(state);
         return state;
     }
-    async advancePipeline(projectId, userId, userInput) {
+    async advancePipeline(projectId, userId, userInput, isLocalMode = false) {
         const state = await this.getProjectState(projectId, userId);
         if (!state)
             throw new Error('Project state not found');
+        const delegate = isLocalMode;
         switch (state.stage) {
             case PipelineStage.discovery:
                 if (userInput && !state.discovery?.isDiscoveryComplete) {
@@ -74,7 +75,7 @@ export class KindlePipelineService {
                     platforms: ['android', 'ios', 'web'],
                     backend: state.technology.recommendedBackend,
                     database: state.technology.recommendedDatabase
-                });
+                }, delegate);
                 break;
             case PipelineStage.architecture:
                 state.stage = PipelineStage.planning;
@@ -89,12 +90,12 @@ export class KindlePipelineService {
                         layers: state.architecture.layers,
                         modules: state.architecture.modules
                     }
-                });
+                }, isLocalMode); // Pass isLocalMode here
                 break;
             case PipelineStage.planning:
                 state.stage = PipelineStage.development;
                 // Start background development orchestration
-                this.runFullDevelopment(state);
+                this.runFullDevelopment(state, isLocalMode);
                 break;
             default:
                 // Already at final stage or development in progress
@@ -103,12 +104,12 @@ export class KindlePipelineService {
         await this.saveProjectState(state);
         return state;
     }
-    async runFullDevelopment(state) {
+    async runFullDevelopment(state, isLocalMode = false) {
         if (!state.plan)
             return;
         for (const phase of state.plan.phases) {
             for (const task of phase.tasks) {
-                await developmentOrchestrator.runTask(state.id, task, state.architecture);
+                await developmentOrchestrator.runTask(state.id, task, state.architecture, isLocalMode);
             }
         }
         state.stage = PipelineStage.completed;

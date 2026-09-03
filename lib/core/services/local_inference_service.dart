@@ -27,29 +27,35 @@ class LocalInferenceService {
   }) async* {
     if (!_isInitialized || _llama == null) throw Exception('Local AI Engine not initialized');
 
-    debugPrint('LocalInferenceService: Starting generation with LlamaCpp...');
-
-    final prompt = '$systemPrompt\n\nUser: $userPrompt\nAssistant:';
+    debugPrint('LocalInferenceService: 🧠 STARTING ON-DEVICE INFERENCE');
+    
+    final prompt = '$systemPrompt\n\n### Instruction:\n$userPrompt\n\n### Response:\n';
     
     try {
       _llama!.setPrompt(prompt);
       
       bool done = false;
+      int tokenCount = 0;
+      
       while (!done) {
-        // llama_cpp_dart 0.2.2 returns a record (String, bool)
         final result = _llama!.getNext();
         final token = result.$1;
         done = result.$2;
         
         if (token.isNotEmpty) {
           yield token;
+          tokenCount++;
         }
         
-        // Small delay to prevent blocking the thread entirely if not in isolate
+        // Safety break to prevent infinite loops with local models
+        if (tokenCount > 4096) break;
+        
+        // Allow the UI to breathe
         await Future.delayed(Duration.zero);
       }
+      debugPrint('LocalInferenceService: ✅ Generation complete ($tokenCount tokens)');
     } catch (e) {
-      debugPrint('LocalInferenceService: Error during generation: $e');
+      debugPrint('LocalInferenceService: ❌ Error during generation: $e');
       rethrow;
     }
   }

@@ -2,6 +2,7 @@ import { codingAgent } from '../ai/coding.agent.js';
 import { buildAgent } from '../ai/build.agent.js';
 import { testingAgent } from '../ai/testing.agent.js';
 import { debugAgent } from '../ai/debug.agent.js';
+import { graphService } from './graph.service.js';
 import { codeChangeService } from './code-change.service.js';
 import { executionService } from './execution.service.js';
 import { workspaceService } from './workspace.service.js';
@@ -10,10 +11,13 @@ import { ExecutionStatus } from '../../models/execution.js';
 import { BuildStatus } from '../../models/build.js';
 import { TestStatus } from '../../models/test.js';
 import { AiError } from '../../models/ai.js';
+import { env } from '../../config/env.js';
 export class DevelopmentOrchestrator {
     MAX_RETRIES = 3;
-    async runTask(projectId, task, architecture) {
+    async runTask(projectId, task, architecture, isLocalMode = false) {
         const executionId = `exec_${Date.now()}`;
+        const isSimulation = env.isSimulation;
+        const modePrefix = isSimulation ? '[SIMULATED] ' : '';
         let execution = {
             id: executionId,
             projectId,
@@ -21,9 +25,9 @@ export class DevelopmentOrchestrator {
             agentId: 'kindle-orchestrator-v2',
             status: ExecutionStatus.planning,
             startedAt: new Date().toISOString(),
-            logs: [executionService.createLog(`Initiating autonomous execution for: ${task.title}`)],
+            logs: [executionService.createLog(`${modePrefix}Initiating autonomous execution for: ${task.title}`)],
         };
-        socketService.emit(projectId, 'AGENT_STARTED', { taskId: task.id, title: task.title });
+        socketService.emit(projectId, 'AGENT_STARTED', { taskId: task.id, title: task.title, isSimulation });
         let retryCount = 0;
         let isVerified = false;
         let debugContext = null;
@@ -37,23 +41,32 @@ export class DevelopmentOrchestrator {
                         socketService.emit(projectId, 'AGENT_PROGRESS', { message: healMsg });
                         await executionService.recordExecution(execution);
                     }
-                    // 1. Get Context
-                    const existingFiles = await workspaceService.listProjectFiles(projectId);
-                    // 2. Generate Code
+                    // 1. Generate Code (using Graph Service)
                     execution.status = ExecutionStatus.running;
-                    const progressMsg = debugContext ? 'Generating targeted fix...' : 'Generating implementation...';
+                    const strategy = isLocalMode ? 'LOCAL_OPTIMIZED' : 'BALANCED';
+                    const progressMsg = debugContext
+                        ? 'Generating targeted fix...'
+                        : `Executing multi-agent task graph (${strategy})...`;
                     execution.logs.push(executionService.createLog(progressMsg));
                     socketService.emit(projectId, 'AGENT_PROGRESS', { status: execution.status, message: progressMsg });
                     await executionService.recordExecution(execution);
-                    const codingResult = await codingAgent.executeTask({
-                        projectId,
-                        architecture,
-                        task,
-                        existingFiles,
-                        debugContext,
-                    });
-                    // 3. Apply Changes
-                    const applyMsg = 'Applying file modifications...';
+                    let codingResult;
+                    if (debugContext) {
+                        // ...
+                        const existingFiles = await workspaceService.listProjectFiles(projectId);
+                        codingResult = await codingAgent.executeTask({
+                            projectId,
+                            architecture,
+                            task,
+                            existingFiles,
+                            debugContext,
+                        });
+                    }
+                    else {
+                        codingResult = await graphService.executeTaskGraph(projectId, task, architecture, strategy, isLocalMode);
+                    }
+                    // 2. Apply Changes
+                    const applyMsg = 'Applying integrated modifications...';
                     execution.logs.push(executionService.createLog(applyMsg, codingResult.explanation));
                     socketService.emit(projectId, 'AGENT_PROGRESS', { message: applyMsg });
                     const checkpointId = await codeChangeService.applyChanges(projectId, codingResult.changes, `Retry ${retryCount}: ${codingResult.explanation}`);
@@ -104,7 +117,10 @@ export class DevelopmentOrchestrator {
             }
             if (isVerified) {
                 execution.status = ExecutionStatus.completed;
-                const finalMsg = 'Autonomous verification successful. Task finalized.';
+                const finalMsg = `${modePrefix}Autonomous verification successful. Task finalized.`;
+                if (isSimulation) {
+                    execution.logs.push(executionService.createLog(`${modePrefix}Cost Saved: This run avoided ~7-10 OpenRouter API requests.`));
+                }
                 execution.logs.push(executionService.createLog(finalMsg));
                 socketService.emit(projectId, 'AGENT_PROGRESS', { status: execution.status, message: finalMsg });
             }

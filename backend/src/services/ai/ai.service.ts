@@ -42,15 +42,18 @@ export class AiService {
 
     const isSimulation = env.isSimulation;
 
-    // Determine provider: Simulation > Explicitly requested > Local (if path set) > Default
+    // Determine provider: Explicitly requested > Local (if path set) > Simulation > Default
     let name = providerName || this.defaultProvider;
-    if (isSimulation) {
-      name = 'simulation';
-    } else if (!providerName && env.LOCAL_MODEL_PATH) {
+
+    if (providerName) {
+      name = providerName;
+    } else if (env.LOCAL_MODEL_PATH && !providerName) {
       name = 'local';
+    } else if (isSimulation) {
+      name = 'simulation';
     }
 
-    if (isSimulation) {
+    if (isSimulation && name === 'simulation') {
       // Don't log "REDIRECTING TO SIMULATION" if it's actually just being used as a fallback for missing keys
       // while delegation is handled at the Agent layer.
       const taskMatch = request.messages.find(m => m.role === 'user')?.content.match(/TASK: (.*)/);

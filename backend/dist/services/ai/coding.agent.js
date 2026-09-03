@@ -2,8 +2,11 @@ import { aiService } from './ai.service.js';
 import { extractJson } from './ai-utils.js';
 import { AiError } from '../../models/ai.js';
 export class CodingAgent {
-    systemPrompt = `
+    getSystemPrompt(role) {
+        const roleInstruction = role ? `You are acting in the ${role} role. Focus strictly on ${role}-related implementation details.` : '';
+        return `
     You are the Kindle Coding Agent. Your goal is to generate high-quality, production-ready source code based on a specific development task and architectural blueprint.
+    ${roleInstruction}
 
     CRITICAL RULE: YOU MUST ONLY OUTPUT VALID JSON.
     NO CONVERSATION. NO EXPLANATIONS. NO THINKING PROCESS.
@@ -35,11 +38,13 @@ export class CodingAgent {
       "confidence": 0.95
     }
   `;
-    async executeTask(request, onChunk) {
+    }
+    async executeTask(request, onChunk, providerName) {
         let userInput = `
       ARCHITECTURE PATTERN: ${request.architecture.pattern}
       LAYERS: ${request.architecture.layers.join(', ')}
       TASK: ${request.task.title}
+      ROLE: ${request.task.role || 'General'}
       DESCRIPTION: ${request.task.description}
       EXPECTED OUTPUT: ${request.task.expectedOutput}
       ACCEPTANCE CRITERIA: ${request.task.acceptanceCriteria.join(' | ')}
@@ -54,8 +59,21 @@ export class CodingAgent {
       SUGGESTED FIX: ${request.debugContext.suggestedFix}
       `;
         }
+        const systemPrompt = this.getSystemPrompt(request.task.role);
+        if (request.delegate) {
+            console.log(`[CODING_AGENT] 🚩 Delegating prompt to client for task: ${request.task.title}`);
+            return {
+                changes: [],
+                explanation: 'Delegating to client-side local LLM.',
+                confidence: 1.0,
+                promptDelegation: {
+                    systemPrompt,
+                    userPrompt: userInput
+                }
+            };
+        }
         const messages = [
-            { role: 'system', content: this.systemPrompt },
+            { role: 'system', content: systemPrompt },
             { role: 'user', content: userInput }
         ];
         try {
@@ -64,7 +82,7 @@ export class CodingAgent {
                 temperature: 0,
                 maxTokens: 16384,
                 reasoning: false
-            }, onChunk);
+            }, onChunk, providerName);
             try {
                 let result;
                 try {

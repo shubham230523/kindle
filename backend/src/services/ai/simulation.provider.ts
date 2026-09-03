@@ -217,6 +217,12 @@ export class SimulationProvider implements AiProvider {
         content: `// Simulated Data Implementation for ${taskTitle}`,
         type: "create"
       });
+    } else if (role === 'INTEGRATION') {
+      changes.push({
+        path: "lib/main.dart",
+        content: `// Simulated Main for ${taskTitle}\nvoid main() => runApp(const MyApp());`,
+        type: "modify"
+      });
     } else {
       changes.push({
         path: "lib/simulated_file.dart",

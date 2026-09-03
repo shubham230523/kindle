@@ -4,7 +4,7 @@ import { socketService } from '../../services/workspace/socket.service.js';
 import { codeChangeService } from '../../services/workspace/code-change.service.js';
 import { storageService } from '../../services/storage/storage.service.js';
 import { ProjectState } from '../../models/pipeline.js';
-import { CodingRequest, FileModification } from '../../models/coding.js';
+import { CodingRequest, FileModification, CodingResult } from '../../models/coding.js';
 import { authGuard } from '../../plugins/auth-guard.js';
 import { env } from '../../config/env.js';
 
@@ -74,9 +74,18 @@ export default async function codingRoutes(fastify: FastifyInstance) {
       });
 
       if (!headersSent) {
-        // If we haven't sent headers yet (agent finished very quickly or without chunks),
-        // return as standard JSON to avoid "object type" error on raw write
-        return result;
+        // CRITICAL: Even for instant delegation, we MUST use SSE protocol
+        // so the client's Stream handler recognizes the instruction.
+        reply.raw.setHeader('Content-Type', 'text/event-stream');
+        reply.raw.setHeader('Cache-Control', 'no-cache');
+        reply.raw.setHeader('Connection', 'keep-alive');
+        reply.raw.setHeader('Access-Control-Allow-Origin', '*');
+        reply.raw.flushHeaders();
+
+        const finalData = JSON.stringify({ type: 'result', content: result });
+        reply.raw.write(`data: ${finalData}\n\n`);
+        reply.raw.end();
+        return;
       }
 
       // Send the final result as the last SSE event

@@ -16,13 +16,13 @@ export default async function pipelineRoutes(fastify) {
         }
     });
     fastify.post('/pipeline/advance', { preHandler: [authGuard] }, async (request, reply) => {
-        const { projectId, userInput } = request.body;
+        const { projectId, userInput, isLocalMode } = request.body;
         const userId = request.user.id;
         if (!projectId) {
             return reply.status(400).send({ error: 'Project ID is required' });
         }
         try {
-            const state = await kindlePipeline.advancePipeline(projectId, userId, userInput);
+            const state = await kindlePipeline.advancePipeline(projectId, userId, userInput, isLocalMode);
             return state;
         }
         catch (error) {

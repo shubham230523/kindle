@@ -11,7 +11,7 @@ export default async function developmentRoutes(fastify) {
             throw new Error('Unauthorized');
     }
     fastify.post('/development/run-task', { preHandler: [authGuard] }, async (request, reply) => {
-        const { projectId, task, architecture } = request.body;
+        const { projectId, task, architecture, isLocalMode } = request.body;
         const userId = request.user.id;
         if (!projectId || !task || !architecture) {
             return reply.status(400).send({
@@ -21,7 +21,7 @@ export default async function developmentRoutes(fastify) {
         }
         try {
             await checkOwnership(projectId, userId);
-            const execution = await developmentOrchestrator.runTask(projectId, task, architecture);
+            const execution = await developmentOrchestrator.runTask(projectId, task, architecture, isLocalMode);
             return execution;
         }
         catch (error) {

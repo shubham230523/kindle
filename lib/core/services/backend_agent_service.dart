@@ -102,8 +102,6 @@ class BackendAgentService implements AgentExecutionService {
                 // In a real UI, we might want to yield a progress update here
                 // For now, we just keep the stream alive
               } else if (type == 'result') {
-                final codingResult = CodingResult.fromMap(content);
-                
                 if (content['promptDelegation'] != null) {
                   // Handle client-side generation
                   final delegation = content['promptDelegation'];
@@ -114,9 +112,10 @@ class BackendAgentService implements AgentExecutionService {
                     startedAt, 
                     delegation['systemPrompt'], 
                     delegation['userPrompt'],
-                    isCodingTask: true // Currently only executeTask is used for streams
+                    isCodingTask: true
                   );
                 } else {
+                  final codingResult = CodingResult.fromMap(content);
                   yield AgentExecution(
                     id: executionId,
                     agentId: agent.id,

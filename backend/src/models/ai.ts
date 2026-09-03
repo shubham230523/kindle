@@ -6,6 +6,7 @@ export interface AiChatMessage {
 
 export interface AiChatRequest {
   messages: AiChatMessage[];
+  model?: string;
   temperature?: number;
   maxTokens?: number;
   reasoning?: boolean;

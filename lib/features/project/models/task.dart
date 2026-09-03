@@ -13,6 +13,7 @@ class Task {
   final List<String> dependencies;
   final TaskComplexity complexity;
   final TaskStatus status;
+  final String? role;
   final Map<String, dynamic> metadata; // For future agent execution data
 
   const Task({
@@ -26,6 +27,7 @@ class Task {
     this.dependencies = const [],
     this.complexity = TaskComplexity.medium,
     this.status = TaskStatus.todo,
+    this.role,
     this.metadata = const {},
   });
 
@@ -40,6 +42,7 @@ class Task {
     List<String>? dependencies,
     TaskComplexity? complexity,
     TaskStatus? status,
+    String? role,
     Map<String, dynamic>? metadata,
   }) {
     return Task(
@@ -53,6 +56,7 @@ class Task {
       dependencies: dependencies ?? this.dependencies,
       complexity: complexity ?? this.complexity,
       status: status ?? this.status,
+      role: role ?? this.role,
       metadata: metadata ?? this.metadata,
     );
   }
@@ -69,6 +73,7 @@ class Task {
       'dependencies': dependencies,
       'complexity': complexity.name,
       'status': status.name,
+      'role': role,
       'metadata': metadata,
     };
   }

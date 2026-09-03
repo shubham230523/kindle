@@ -30,7 +30,7 @@ export class LocalLlamaProvider implements AiProvider {
 
       const response = await this.session.prompt(userPrompt, {
         onToken: (tokens) => {
-          const chunk = this.llama!.decode(tokens);
+          const chunk = this.model!.detokenize(tokens);
           fullResponse += chunk;
           if (onChunk) onChunk(chunk);
         },

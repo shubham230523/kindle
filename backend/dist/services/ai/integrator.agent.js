@@ -1,0 +1,71 @@
+import { aiService } from './ai.service.js';
+import { extractJson } from './ai-utils.js';
+import { AiError } from '../../models/ai.js';
+export class IntegratorAgent {
+    systemPrompt = `
+    You are the Kindle Integrator Agent. Your goal is to take multiple sets of code changes from specialized agents and merge them into a cohesive, production-ready system.
+
+    CRITICAL RULE: YOU MUST ONLY OUTPUT VALID JSON.
+    YOUR ENTIRE RESPONSE MUST BE A SINGLE JSON OBJECT.
+
+    Responsibilities:
+    1. CONFLICT RESOLUTION: If two agents modified the same file, merge their changes logically.
+    2. WIRING: Ensure Dependency Injection (DI) is correctly set up between layers (e.g., UI connecting to BLoCs, BLoCs connecting to Repositories).
+    3. NAVIGATION: Register any new screens in the app's routing/navigation system.
+    4. BOILERPLATE: Add necessary exports and imports to keep the project compilable.
+
+    OUTPUT FORMAT:
+    {
+      "changes": [
+        {
+          "path": "relative/path/to/file.ext",
+          "content": "Full source code content here...",
+          "type": "create" | "modify" | "delete"
+        }
+      ],
+      "explanation": "Summary of how the components were integrated and wired up"
+    }
+  `;
+    async integrate(allResults, architecture, existingFiles, delegate) {
+        const userInput = `
+      ARCHITECTURE: ${architecture.pattern}
+      LAYERS: ${architecture.layers.join(', ')}
+
+      COMPONENTS TO INTEGRATE:
+      ${allResults.map((r, i) => `Agent Result #${i + 1} Explanation: ${r.explanation}`).join('\n')}
+
+      EXISTING FILES: ${existingFiles.join(', ')}
+    `;
+        if (delegate) {
+            console.log(`[INTEGRATOR_AGENT] 🚩 Delegating prompt to client for integration.`);
+            return {
+                changes: [],
+                explanation: 'Delegating to client-side local LLM.',
+                confidence: 1.0,
+                promptDelegation: {
+                    systemPrompt: this.systemPrompt,
+                    userPrompt: userInput
+                }
+            };
+        }
+        const messages = [
+            { role: 'system', content: this.systemPrompt },
+            { role: 'user', content: userInput }
+        ];
+        try {
+            const response = await aiService.chat({
+                messages,
+                temperature: 0,
+                maxTokens: 16384
+            });
+            const result = extractJson(response.content);
+            return result;
+        }
+        catch (error) {
+            if (error instanceof AiError)
+                throw error;
+            throw new AiError(`Integrator Agent Error: ${error.message}`, 500, 'integrator-agent');
+        }
+    }
+}
+export const integratorAgent = new IntegratorAgent();

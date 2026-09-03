@@ -56,7 +56,21 @@ class WorkspaceViewModel extends ChangeNotifier {
   
   WorkspaceViewModel(this._project, this._executionService) {
     _initializeFileSystem();
+    _loadSettings();
     _checkModelStatus();
+  }
+
+  Future<void> _loadSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    _isLocalAiMode = prefs.getBool('pref_local_ai_mode') ?? false;
+    notifyListeners();
+  }
+
+  void toggleLocalAiMode() async {
+    _isLocalAiMode = !_isLocalAiMode;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('pref_local_ai_mode', _isLocalAiMode);
+    notifyListeners();
   }
 
   Future<void> _checkModelStatus() async {
@@ -142,13 +156,16 @@ class WorkspaceViewModel extends ChangeNotifier {
 
         debugPrint('WorkspaceViewModel: Next task identified: ${nextTask.title} (${nextTask.id})');
         final agent = _assignAgentForTask(nextTask);
-        debugPrint('WorkspaceViewModel: Assigned agent ${agent.name} (${agent.type})');
+        final role = _assignRoleForTask(nextTask);
+        final taskWithRole = nextTask.copyWith(role: role);
+        
+        debugPrint('WorkspaceViewModel: Assigned agent ${agent.name} (${agent.type}) with role: $role');
         
         debugPrint('WorkspaceViewModel: Starting stream for task ${nextTask.id}...');
         final existingFilePaths = _getAllFilePaths(_virtualFileSystem, '');
         
         await for (final execution in _executionService.executeTask(
-          nextTask,
+          taskWithRole,
           agent,
           project: _project,
           existingFiles: existingFilePaths,
@@ -206,7 +223,9 @@ class WorkspaceViewModel extends ChangeNotifier {
   }
 
   void _applyCodingResult(CodingResult result) {
+    debugPrint('WorkspaceViewModel: Applying ${result.changes.length} file changes');
     for (final change in result.changes) {
+      debugPrint('WorkspaceViewModel: Processing [${change.type}] ${change.path}');
       if (change.type == 'delete') {
         _removeFileFromSystem(change.path);
       } else {
@@ -217,6 +236,7 @@ class WorkspaceViewModel extends ChangeNotifier {
   }
 
   void _addOrUpdateFileInSystem(String path, String content) {
+    debugPrint('WorkspaceViewModel: VFS Update - Path: $path');
     final parts = path.split('/');
     List<FileNode> currentLevel = _virtualFileSystem;
     
@@ -228,7 +248,7 @@ class WorkspaceViewModel extends ChangeNotifier {
       
       if (isLast) {
         if (existingIndex != -1) {
-          // Update existing file
+          debugPrint('WorkspaceViewModel: Updating existing file: $part');
           final oldNode = currentLevel[existingIndex];
           currentLevel[existingIndex] = FileNode(
             name: part,
@@ -237,18 +257,18 @@ class WorkspaceViewModel extends ChangeNotifier {
             isExpanded: oldNode.isExpanded,
           );
         } else {
-          // Create new file
+          debugPrint('WorkspaceViewModel: Creating new file: $part');
           currentLevel.add(FileNode(name: part, content: content));
         }
       } else {
         if (existingIndex != -1) {
           if (!currentLevel[existingIndex].isFolder) {
-            // Error: File exists where folder expected
+            debugPrint('WorkspaceViewModel: Error - $part exists but is not a folder');
             return;
           }
           currentLevel = currentLevel[existingIndex].children!;
         } else {
-          // Create new folder
+          debugPrint('WorkspaceViewModel: Creating new folder: $part');
           final newFolder = FileNode(name: part, isFolder: true, children: [], isExpanded: true);
           currentLevel.add(newFolder);
           currentLevel = newFolder.children!;
@@ -422,6 +442,18 @@ class WorkspaceViewModel extends ChangeNotifier {
     }
     
     return _agents[3]; // Default to Coding Agent
+  }
+
+  String _assignRoleForTask(Task task) {
+    final title = task.title.toLowerCase();
+    final desc = task.description.toLowerCase();
+
+    if (title.contains('ui') || title.contains('screen') || title.contains('widget')) return 'UI';
+    if (title.contains('entity') || title.contains('model') || desc.contains('domain')) return 'DOMAIN';
+    if (title.contains('repository') || title.contains('data') || title.contains('api')) return 'DATA';
+    if (title.contains('integration') || title.contains('wire') || title.contains('initialize')) return 'INTEGRATION';
+
+    return 'UI'; // Default to UI for coding tasks
   }
 
   void _markTaskAsDone(String taskId) {

@@ -27,7 +27,7 @@ export class ArchitectureAgent {
       "apiStrategy": "Summary of API communication and state sync"
     }
   `;
-    async generateBlueprint(request) {
+    async generateBlueprint(request, delegate) {
         const userInput = `
       REQUIREMENTS: ${request.requirements.join(', ')}
       TECHNOLOGY: ${request.technology}
@@ -35,6 +35,21 @@ export class ArchitectureAgent {
       BACKEND: ${request.backend}
       DATABASE: ${request.database}
     `;
+        if (delegate) {
+            console.log(`[ARCHITECTURE_AGENT] 🚩 Delegating prompt to client for technology: ${request.technology}`);
+            return {
+                pattern: '',
+                layers: [],
+                modules: [],
+                dependencies: [],
+                dataFlow: '',
+                apiStrategy: '',
+                promptDelegation: {
+                    systemPrompt: this.systemPrompt,
+                    userPrompt: userInput
+                }
+            };
+        }
         const messages = [
             { role: 'system', content: this.systemPrompt },
             { role: 'user', content: userInput }
