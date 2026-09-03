@@ -209,17 +209,27 @@ class BackendAgentService implements AgentExecutionService {
     }
 
     try {
-      // Attempt to find JSON in the output if it's not pure JSON
+      // Attempt to find the first valid JSON block in the output
       String jsonContent = resultString;
-      if (!resultString.trim().startsWith('{')) {
-         final start = resultString.indexOf('{');
-         final end = resultString.lastIndexOf('}');
-         if (start != -1 && end != -1) {
-           jsonContent = resultString.substring(start, end + 1);
-         }
+      final start = resultString.indexOf('{');
+      if (start != -1) {
+        int depth = 0;
+        int end = -1;
+        for (int i = start; i < resultString.length; i++) {
+          if (resultString[i] == '{') depth++;
+          else if (resultString[i] == '}') depth--;
+          
+          if (depth == 0) {
+            end = i;
+            break;
+          }
+        }
+        if (end != -1) {
+          jsonContent = resultString.substring(start, end + 1);
+        }
       }
 
-      final resultMap = jsonDecode(jsonContent);
+      final resultMap = jsonDecode(_sanitizeJson(jsonContent));
       final dynamic finalResult = isCodingTask ? CodingResult.fromMap(resultMap) : resultMap;
       
       yield AgentExecution(
@@ -242,5 +252,35 @@ class BackendAgentService implements AgentExecutionService {
       debugPrint('Local AI Decode Error: $e\nRaw content: $resultString');
       throw Exception('Failed to parse local AI output: $e');
     }
+  }
+
+  String _sanitizeJson(String input) {
+    // 1. Remove markdown code block markers
+    input = input.replaceAll('```json', '').replaceAll('```', '');
+
+    // 2. Handle Dart raw string markers: r""" ... """ and r" ... "
+    input = input.replaceAllMapped(RegExp(r'r"""([\s\S]*?)"""'), (m) => jsonEncode(m.group(1)));
+    input = input.replaceAllMapped(RegExp(r'r"([\s\S]*?)"'), (m) => jsonEncode(m.group(1)));
+    
+    // 3. Handle standard triple quotes: """ ... """
+    input = input.replaceAllMapped(RegExp(r'"""([\s\S]*?)"""'), (m) => jsonEncode(m.group(1)));
+
+    // 4. Handle literal newlines inside double-quoted values.
+    // We look for : followed by " and then a block that contains newlines
+    // and ends with " followed by a comma, brace, or bracket.
+    final jsonValuePattern = RegExp(r':\s*"([\s\S]*?)"\s*(?=[,\]}])');
+    input = input.replaceAllMapped(jsonValuePattern, (match) {
+      final value = match.group(1) ?? '';
+      if (value.contains('\n') || value.contains('\r')) {
+        // Encode properly to escape newlines, quotes, etc.
+        return ': ' + jsonEncode(value);
+      }
+      return match.group(0)!;
+    });
+
+    // 5. Remove trailing commas in objects/arrays
+    input = input.replaceAllMapped(RegExp(r',\s*([\]}])'), (match) => match.group(1)!);
+
+    return input;
   }
 }
