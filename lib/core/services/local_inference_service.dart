@@ -1,17 +1,19 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
-// import 'package:llamadart/llamadart.dart'; // Assuming the plugin name
+import 'package:llama_cpp_dart/llama_cpp_dart.dart';
 
 class LocalInferenceService {
   bool _isInitialized = false;
-  // Llama? _llama;
+  Llama? _llama;
 
   Future<void> initialize(String modelPath) async {
     if (_isInitialized) return;
     
     debugPrint('LocalInferenceService: Initializing with model at $modelPath');
     try {
-      // _llama = Llama(modelPath);
+      // In 0.2.2, we use the Llama wrapper
+      _llama = Llama(modelPath);
       _isInitialized = true;
     } catch (e) {
       debugPrint('LocalInferenceService: Failed to initialize: $e');
@@ -23,21 +25,32 @@ class LocalInferenceService {
     required String systemPrompt,
     required String userPrompt,
   }) async* {
-    if (!_isInitialized) throw Exception('Local AI Engine not initialized');
+    if (!_isInitialized || _llama == null) throw Exception('Local AI Engine not initialized');
 
-    debugPrint('LocalInferenceService: Starting generation...');
+    debugPrint('LocalInferenceService: Starting generation with LlamaCpp...');
+
+    final prompt = '$systemPrompt\n\nUser: $userPrompt\nAssistant:';
     
-    // Simulate token streaming for now until plugin is fully linked
-    // In a real implementation:
-    /*
-    await for (final token in _llama!.prompt(
-      '$systemPrompt\n\nUser: $userPrompt\nAssistant:',
-      temp: 0.2,
-    )) {
-      yield token;
+    try {
+      _llama!.setPrompt(prompt);
+      
+      bool done = false;
+      while (!done) {
+        // llama_cpp_dart 0.2.2 returns a record (String, bool)
+        final result = _llama!.getNext();
+        final token = result.$1;
+        done = result.$2;
+        
+        if (token.isNotEmpty) {
+          yield token;
+        }
+        
+        // Small delay to prevent blocking the thread entirely if not in isolate
+        await Future.delayed(Duration.zero);
+      }
+    } catch (e) {
+      debugPrint('LocalInferenceService: Error during generation: $e');
+      rethrow;
     }
-    */
-    
-    yield '{\n  "changes": [],\n  "explanation": "Simulated local generation",\n  "confidence": 1.0\n}';
   }
 }

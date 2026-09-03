@@ -169,6 +169,8 @@ class BackendAgentService implements AgentExecutionService {
         ],
       );
     }
+  }
+
   Stream<AgentExecution> _handleLocalGeneration(
     String executionId,
     Agent agent,
