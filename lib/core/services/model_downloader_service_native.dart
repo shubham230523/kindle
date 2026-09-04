@@ -7,6 +7,8 @@ import 'package:flutter/foundation.dart';
 import 'model_downloader_service.dart';
 
 class ModelDownloaderServiceImpl extends ModelDownloaderService {
+  ModelDownloaderServiceImpl() : super._();
+
   static const String _modelKey = 'kindle_ai_model_downloaded';
   static const String _modelUrl = 'https://huggingface.co/Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF/resolve/main/qwen2.5-coder-1.5b-instruct-q4_k_m.gguf';
   static const String _modelFileName = 'qwen2.5-coder-1.5b.gguf';

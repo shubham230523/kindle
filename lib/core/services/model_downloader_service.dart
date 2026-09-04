@@ -16,6 +16,7 @@ class DownloadProgress {
 }
 
 abstract class ModelDownloaderService {
+  ModelDownloaderService._();
   factory ModelDownloaderService() => ModelDownloaderServiceImpl();
   
   Future<bool> isModelDownloaded();
