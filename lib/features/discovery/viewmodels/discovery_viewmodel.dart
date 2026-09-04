@@ -56,9 +56,14 @@ class DiscoveryViewModel extends ChangeNotifier {
 
       _handleBackendResponse(result);
     } catch (e) {
+      String error = 'Connection failed. Please check if the backend is running.';
+      if (e.toString().contains('TimeoutException')) {
+        error = 'The AI is taking a bit longer to think. Please try again or check your hardware performance.';
+      }
+      
       _state = _state.copyWith(
         isAiTyping: false,
-        errorMessage: 'Connection failed. Please check if the backend is running.',
+        errorMessage: error,
       );
       notifyListeners();
     }

@@ -121,97 +121,101 @@ class _TechnologySelectionScreenState extends State<TechnologySelectionScreen> {
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: kMaxContentWidth),
-          child: Padding(
-            padding: const EdgeInsets.all(AppConstants.spacingMd),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  'Choose your Spark Stack',
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
+          child: Column(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(AppConstants.spacingMd),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Text(
+                        'Choose your Spark Stack',
+                        style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                        textAlign: TextAlign.center,
                       ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppConstants.spacingSm),
-                Text(
-                  'Kindle AI has analyzed your requirements and suggests a perfect fit.',
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.textSecondary,
+                      const SizedBox(height: AppConstants.spacingSm),
+                      Text(
+                        'Kindle AI has analyzed your requirements and suggests a perfect fit.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: AppColors.textSecondary,
+                            ),
+                        textAlign: TextAlign.center,
                       ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: AppConstants.spacingLg),
-                if (_recommendation != null) ...[
-                  _RecommendationSection(
-                    recommendation: _recommendation!,
-                    tech: _technologies.firstWhere((t) => t.id == _recommendation!.techId),
-                    isSelected: _selectedTechId == _recommendation!.techId,
-                    onSelect: () => setState(() => _selectedTechId = _recommendation!.techId),
-                  ),
-                  const SizedBox(height: AppConstants.spacingLg),
-                  const Divider(),
-                  const SizedBox(height: AppConstants.spacingMd),
-                  const Text(
-                    'Other Compatible Options',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  const SizedBox(height: AppConstants.spacingSm),
-                ],
-                Expanded(
-                  child: ListView.builder(
-                    itemCount: _technologies.length,
-                    itemBuilder: (context, index) {
-                      final tech = _technologies[index];
-                      if (_recommendation != null && tech.id == _recommendation!.techId) {
-                        return const SizedBox.shrink();
-                      }
-                      
-                      final isCompatible = _isCompatible(tech);
-                      final isSelected = _selectedTechId == tech.id;
+                      const SizedBox(height: AppConstants.spacingLg),
+                      if (_recommendation != null) ...[
+                        _RecommendationSection(
+                          recommendation: _recommendation!,
+                          tech: _technologies.firstWhere((t) => t.id == _recommendation!.techId),
+                          isSelected: _selectedTechId == _recommendation!.techId,
+                          onSelect: () => setState(() => _selectedTechId = _recommendation!.techId),
+                        ),
+                        const SizedBox(height: AppConstants.spacingLg),
+                        const Divider(),
+                        const SizedBox(height: AppConstants.spacingMd),
+                        const Text(
+                          'Other Compatible Options',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: AppConstants.spacingSm),
+                      ],
+                      // Replace ListView with a simple Column since the list is small
+                      // This ensures the entire page scrolls together
+                      ..._technologies.map((tech) {
+                        if (_recommendation != null && tech.id == _recommendation!.techId) {
+                          return const SizedBox.shrink();
+                        }
+                        
+                        final isCompatible = _isCompatible(tech);
+                        final isSelected = _selectedTechId == tech.id;
 
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: AppConstants.spacingMd),
-                        child: Opacity(
-                          opacity: isCompatible ? 1.0 : 0.5,
-                          child: KindleCard(
-                            onTap: isCompatible ? () => setState(() => _selectedTechId = tech.id) : null,
-                            padding: const EdgeInsets.all(AppConstants.spacingMd),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: Text(
-                                        tech.name,
-                                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                              fontWeight: FontWeight.bold,
-                                              color: isSelected ? AppColors.primary : AppColors.textPrimary,
-                                            ),
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: AppConstants.spacingMd),
+                          child: Opacity(
+                            opacity: isCompatible ? 1.0 : 0.5,
+                            child: KindleCard(
+                              onTap: isCompatible ? () => setState(() => _selectedTechId = tech.id) : null,
+                              padding: const EdgeInsets.all(AppConstants.spacingMd),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: Text(
+                                          tech.name,
+                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                fontWeight: FontWeight.bold,
+                                                color: isSelected ? AppColors.primary : AppColors.textPrimary,
+                                              ),
+                                        ),
                                       ),
-                                    ),
-                                    if (isSelected)
-                                      const Icon(Icons.check_circle, color: AppColors.primary),
-                                    if (!isCompatible)
-                                      const Icon(Icons.block, color: Colors.grey, size: 16),
-                                  ],
-                                ),
-                                const SizedBox(height: AppConstants.spacingXs),
-                                Text(
-                                  tech.description,
-                                  style: Theme.of(context).textTheme.bodySmall,
-                                ),
-                              ],
+                                      if (isSelected)
+                                        const Icon(Icons.check_circle, color: AppColors.primary),
+                                      if (!isCompatible)
+                                        const Icon(Icons.block, color: Colors.grey, size: 16),
+                                    ],
+                                  ),
+                                  const SizedBox(height: AppConstants.spacingXs),
+                                  Text(
+                                    tech.description,
+                                    style: Theme.of(context).textTheme.bodySmall,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      }).toList(),
+                    ],
                   ),
                 ),
-                const SizedBox(height: AppConstants.spacingMd),
-                KindleButton(
+              ),
+              Padding(
+                padding: const EdgeInsets.all(AppConstants.spacingMd),
+                child: KindleButton(
                   text: 'Finalize Spark Stack',
                   onPressed: _selectedTechId == null
                       ? () => ScaffoldMessenger.of(context).showSnackBar(
@@ -222,8 +226,8 @@ class _TechnologySelectionScreenState extends State<TechnologySelectionScreen> {
                           Navigator.pop(context, updatedProject);
                         },
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),

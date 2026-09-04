@@ -62,15 +62,20 @@ class _ProjectEditScreenState extends State<ProjectEditScreen> {
               decoration: const InputDecoration(
                 labelText: 'Application Name',
                 border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.symmetric(
+                  horizontal: AppConstants.spacingMd,
+                  vertical: AppConstants.spacingMd,
+                ),
               ),
             ),
             const SizedBox(height: AppConstants.spacingMd),
             TextField(
               controller: _descController,
-              maxLines: 3,
+              maxLines: 5,
               decoration: const InputDecoration(
                 labelText: 'Description',
                 border: OutlineInputBorder(),
+                contentPadding: EdgeInsets.all(AppConstants.spacingMd),
               ),
             ),
             const SizedBox(height: AppConstants.spacingLg),
@@ -91,6 +96,10 @@ class _ProjectEditScreenState extends State<ProjectEditScreen> {
                   decoration: InputDecoration(
                     hintText: 'Feature name',
                     border: const OutlineInputBorder(),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: AppConstants.spacingMd,
+                      vertical: AppConstants.spacingSm,
+                    ),
                     suffixIcon: IconButton(
                       icon: const Icon(Icons.delete_outline),
                       onPressed: () {

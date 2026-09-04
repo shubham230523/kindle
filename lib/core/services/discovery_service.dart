@@ -22,7 +22,7 @@ class DiscoveryService {
             'reasoning_details': m.reasoningDetails,
           }).toList(),
         }),
-      ).timeout(const Duration(seconds: 35));
+      ).timeout(const Duration(seconds: 300)); // Increased to 5 minutes for slow local CPU inference
 
       if (response.statusCode == 200) {
         return DiscoveryBackendResult.fromJson(jsonDecode(response.body));

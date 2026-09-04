@@ -1,75 +1,119 @@
 export function extractJson<T>(content: string | null | undefined): T {
   if (!content || content.trim().length === 0) {
-    throw new Error('AI returned empty or null content. This usually happens if the model reaches its token limit or fails to follow the response format.');
+    throw new Error('AI returned empty or null content.');
   }
 
-  const trimmedContent = content.trim();
+  // 1. Clean markdown and artifacts
+  let input = content.replace(/```json/g, '').replace(/```/g, '').trim();
 
-  // 1. Try parsing the whole content first
+  // 2. String-Aware JSON Block Extraction
+  const start = input.indexOf('{');
+  if (start !== -1) {
+    let depth = 0;
+    let inString = false;
+    let escaped = false;
+    let end = -1;
+
+    for (let i = start; i < input.length; i++) {
+      const char = input[i];
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (char === '\\') {
+        escaped = true;
+        continue;
+      }
+      if (char === '"') {
+        inString = !inString;
+        continue;
+      }
+      if (!inString) {
+        if (char === '{') depth++;
+        else if (char === '}') depth--;
+
+        if (depth === 0) {
+          end = i;
+          break;
+        }
+      }
+    }
+    if (end !== -1) {
+      input = input.substring(start, end + 1);
+    }
+  }
+
+  // 3. State-machine to fix literal newlines in strings
+  let buffer = '';
+  let inString = false;
+  let escaped = false;
+
+  for (let i = 0; i < input.length; i++) {
+    const char = input[i];
+    if (inString) {
+      if (escaped) {
+        buffer += char;
+        escaped = false;
+      } else if (char === '\\') {
+        buffer += char;
+        escaped = true;
+      } else if (char === '"') {
+        buffer += char;
+        inString = false;
+      } else if (char === '\n') {
+        buffer += '\\n';
+      } else if (char === '\r') {
+        buffer += '\\r';
+      } else {
+        buffer += char;
+      }
+    } else {
+      if (char === '"') inString = true;
+      buffer += char;
+    }
+  }
+  input = buffer;
+
+  // 4. Handle Dart/Coder hallucinations (raw strings)
+  input = input.replace(/r"""([\s\S]*?)"""/g, (match, p1) => JSON.stringify(p1));
+  input = input.replace(/r"([\s\S]*?)"/g, (match, p1) => JSON.stringify(p1));
+  input = input.replace(/"""([\s\S]*?)"""/g, (match, p1) => JSON.stringify(p1));
+
+  // 5. Remove trailing commas
+  input = input.replace(/,\s*([\]}])/g, '$1');
+
+  // 6. Final safety: If the JSON is truncated, try to close it
+  if (!input.endsWith('}')) {
+    if (input.split('"').length % 2 === 0) input += '"';
+    const openBraces = (input.match(/{/g) || []).length;
+    const closeBraces = (input.match(/}/g) || []).length;
+    const openBrackets = (input.match(/\[/g) || []).length;
+    const closeBrackets = (input.match(/\]/g) || []).length;
+    for (let i = 0; i < (openBrackets - closeBrackets); i++) input += ']';
+    for (let i = 0; i < (openBraces - closeBraces); i++) input += '}';
+  }
+
   try {
-    const parsed = JSON.parse(trimmedContent);
-    if (parsed !== null && typeof parsed === 'object') {
-      return parsed as T;
+    return JSON.parse(input) as T;
+  } catch (e: any) {
+    // 7. Heuristic fallback for Discovery Agent
+    // If the model output a plain question instead of JSON, we can try to wrap it.
+    if (content.includes('?') && content.length < 500) {
+      console.log('[AI_UTILS] 💡 Applying heuristic recovery for plain-text question.');
+      const recovery = {
+        understandingSummary: "The user is clarifying their requirements.",
+        currentQuestion: content.trim(),
+        discoveredRequirements: [],
+        missingInformation: [],
+        confidence: 0.5,
+        isDiscoveryComplete: false
+      };
+      return recovery as unknown as T;
     }
-  } catch (e) {
-    // Continue
+
+    console.error('[AI_UTILS] ❌ Extraction Error:', e.message);
+    console.error('[AI_UTILS] 📄 Raw Content:', content);
+    console.error('[AI_UTILS] 🔧 Processed Content:', input);
+    throw new Error(`AI failed to provide a structured JSON response: ${e.message}`);
   }
-
-  // 2. Try to find JSON inside markdown code blocks
-  const codeBlockMatch = content.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-  if (codeBlockMatch) {
-    try {
-      const parsed = JSON.parse(codeBlockMatch[1].trim());
-      if (parsed !== null && typeof parsed === 'object') {
-        return parsed as T;
-      }
-    } catch (e) {
-      // Continue
-    }
-  }
-
-  // 3. Recursive brace matching
-  // We look for all '{' and try to find a matching '}' that forms a valid JSON object.
-  const firstBraceIndex = content.indexOf('{');
-  if (firstBraceIndex !== -1) {
-    for (let i = content.length - 1; i > firstBraceIndex; i--) {
-      if (content[i] === '}') {
-        const potentialJson = content.substring(firstBraceIndex, i + 1);
-        try {
-          const parsed = JSON.parse(potentialJson);
-          if (parsed !== null && typeof parsed === 'object') {
-            return parsed as T;
-          }
-        } catch (e) {
-          // Continue searching for a different closing brace
-        }
-      }
-    }
-  }
-
-  // 4. Sanitize and try one last time (handle common issues like unescaped newlines in strings)
-  // This is a bit risky but can save some responses.
-  if (firstBraceIndex !== -1) {
-    const lastBraceIndex = content.lastIndexOf('}');
-    if (lastBraceIndex > firstBraceIndex) {
-      let sanitized = content.substring(firstBraceIndex, lastBraceIndex + 1);
-
-      // Replace unescaped newlines inside quotes, while respecting escaped quotes
-      // This is a more complex regex to handle basic escape sequences
-      sanitized = sanitized.replace(/"((?:[^"\\]|\\.)*)"/g, (match, p1) => {
-        return '"' + p1.replace(/\n/g, '\\n').replace(/\r/g, '\\r') + '"';
-      });
-
-      try {
-        const parsed = JSON.parse(sanitized);
-        if (parsed !== null && typeof parsed === 'object') {
-          return parsed as T;
-        }
-      } catch (e) {
-        // Final failure
-      }
-    }
-  }
-
-  throw new Error('AI failed to provide a structured JSON response.');
 }

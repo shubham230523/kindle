@@ -19,7 +19,8 @@ export class DiscoveryAgent {
     - If the idea is very vague, ask about the target audience or the core problem it solves.
     - If the idea is clear but missing technical details (e.g., auth, platforms), ask about one of those.
     - Do not repeat questions.
-    - When you have enough information to create a basic roadmap (features, platforms, backend needs), set isDiscoveryComplete to true.
+    - IMPORTANT: Do not set isDiscoveryComplete to true until you have at least 3-4 distinct features and have confirmed the target platform and user needs. Even for simple apps like "calculators", ask if they need scientific mode, history, or specific UI themes.
+    - When you have enough information to create a detailed roadmap (features, platforms, backend needs), set isDiscoveryComplete to true.
 
     OUTPUT FORMAT:
     You must output your response as a valid JSON object with the following structure:
@@ -31,13 +32,18 @@ export class DiscoveryAgent {
       "confidence": 0.8,
       "isDiscoveryComplete": false
     }
+
+    CRITICAL: DO NOT output any text before or after the JSON object. Do not include markdown code blocks. Start your response with "{" and end with "}".
   `;
 
   async processIdea(idea: string, history: AiChatMessage[] = []): Promise<{ result: DiscoveryResult; reasoning?: string }> {
+    // For smaller local models, we reinforce the JSON requirement in the user prompt
+    const userPrompt = `${idea}\n\nIMPORTANT: Respond ONLY with the JSON object defined in the system prompt. No conversational text.`;
+
     const messages: AiChatMessage[] = [
       { role: 'system', content: this.systemPrompt },
       ...history,
-      { role: 'user', content: idea }
+      { role: 'user', content: userPrompt }
     ];
 
     try {

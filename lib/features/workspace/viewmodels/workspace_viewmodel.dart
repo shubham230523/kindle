@@ -58,7 +58,8 @@ class WorkspaceViewModel extends ChangeNotifier {
 
   Future<void> _loadSettings() async {
     final prefs = await SharedPreferences.getInstance();
-    _isLocalAiMode = prefs.getBool('pref_local_ai_mode') ?? false;
+    // Default to true for Local AI Mode
+    _isLocalAiMode = prefs.getBool('pref_local_ai_mode') ?? true;
     notifyListeners();
   }
 

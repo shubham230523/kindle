@@ -43,14 +43,16 @@ export class AiService {
     const isSimulation = env.isSimulation;
 
     // Determine provider: Explicitly requested > Local (if path set) > Simulation > Default
-    let name = providerName || this.defaultProvider;
+    let name = providerName;
 
-    if (providerName) {
-      name = providerName;
-    } else if (env.LOCAL_MODEL_PATH && !providerName) {
-      name = 'local';
-    } else if (isSimulation) {
-      name = 'simulation';
+    if (!name) {
+      if (env.LOCAL_MODEL_PATH) {
+        name = 'local';
+      } else if (isSimulation) {
+        name = 'simulation';
+      } else {
+        name = this.defaultProvider;
+      }
     }
 
     if (isSimulation && name === 'simulation') {
