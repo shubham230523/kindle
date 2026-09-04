@@ -4,11 +4,9 @@ import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
-import 'model_downloader_service.dart';
+import 'model_downloader_progress.dart';
 
-class ModelDownloaderServiceImpl extends ModelDownloaderService {
-  ModelDownloaderServiceImpl() : super._();
-
+class ModelDownloaderService {
   static const String _modelKey = 'kindle_ai_model_downloaded';
   static const String _modelUrl = 'https://huggingface.co/Qwen/Qwen2.5-Coder-1.5B-Instruct-GGUF/resolve/main/qwen2.5-coder-1.5b-instruct-q4_k_m.gguf';
   static const String _modelFileName = 'qwen2.5-coder-1.5b.gguf';
@@ -23,7 +21,6 @@ class ModelDownloaderServiceImpl extends ModelDownloaderService {
   ));
   CancelToken? _cancelToken;
 
-  @override
   Future<bool> isModelDownloaded() async {
     debugPrint('ModelDownloaderService: Checking model status...');
     if (kIsWeb) return true;
@@ -45,13 +42,11 @@ class ModelDownloaderServiceImpl extends ModelDownloaderService {
     return false;
   }
 
-  @override
   Future<String> getModelPath() async {
     final directory = await getApplicationDocumentsDirectory();
     return '${directory.path}/models/$_modelFileName';
   }
 
-  @override
   Stream<DownloadProgress> downloadModel() {
     final controller = StreamController<DownloadProgress>();
     
@@ -125,7 +120,6 @@ class ModelDownloaderServiceImpl extends ModelDownloaderService {
     }
   }
 
-  @override
   void cancelDownload() {
     _cancelToken?.cancel();
   }

@@ -1,20 +1,14 @@
 import 'dart:async';
-import 'model_downloader_service.dart';
+import 'model_downloader_progress.dart';
 
-class ModelDownloaderServiceImpl extends ModelDownloaderService {
-  ModelDownloaderServiceImpl() : super._();
-
-  @override
+class ModelDownloaderService {
   Future<bool> isModelDownloaded() async => true;
 
-  @override
   Future<String> getModelPath() async => '';
 
-  @override
   Stream<DownloadProgress> downloadModel() {
     return Stream.value(DownloadProgress(progress: 1.0, status: 'Ready', isCompleted: true));
   }
 
-  @override
   void cancelDownload() {}
 }
