@@ -8,6 +8,31 @@
 
 > **Think it. Kindle builds it.**
 
+## 🖥️ Platform Support & AI Engine
+
+Kindle is designed for a seamless developer experience across high-performance environments:
+
+*   **Desktop (Windows/macOS/Linux)**: **Full Support.** Recommended for heavy development. Supports **Local LLM Mode** (GGUF via llama.cpp) for total privacy and zero latency.
+*   **Web**: **Full Support.** Uses **Cloud AI Agents**. Local LLM inference is currently disabled in browser environments due to FFI limitations.
+*   **Mobile**: Not currently a focus of development.
+
+### 🌐 Cloud AI Configuration (For Web)
+
+When running on the Web, Kindle requires a Cloud AI provider (like OpenRouter). You must configure your API keys in the **Backend** environment:
+
+1.  Navigate to the `backend/` directory.
+2.  Open or create a `.env` file.
+3.  Add your provider details:
+    ```env
+    # Cloud AI Provider (e.g., OpenRouter)
+    OPENROUTER_API_KEY=your_api_key_here
+    OPENROUTER_MODEL=meta-llama/llama-3.1-70b-instruct:free
+    ```
+4.  If you are using a local Ollama instance as your "cloud" provider, set:
+    ```env
+    OLLAMA_API_URL=http://your-ip-address:11434/api/chat
+    ```
+
 ## 🚀 Key Features
 
 *   **Universal Prompt Delegation**: A hybrid architecture that allows the backend to orchestrate the "Lang Graph" while delegating heavy inference tasks to the client's local hardware.
