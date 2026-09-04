@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import '../../project/models/project.dart';
 import '../../project/models/task.dart';
 import '../../../shared/widgets/kindle_card.dart';
@@ -462,9 +463,11 @@ class _LocalAiModeToggle extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  viewModel.isLocalAiMode
-                      ? 'Inference running on your laptop (GGUF)'
-                      : 'Using Kindle Cloud Agents (OpenRouter)',
+                  kIsWeb 
+                      ? 'Local AI not available on Web'
+                      : (viewModel.isLocalAiMode
+                          ? 'Inference running on your laptop (GGUF)'
+                          : 'Using Kindle Cloud Agents (OpenRouter)'),
                   style: TextStyle(
                     fontSize: 12,
                     color: viewModel.isLocalAiMode ? Colors.blue.shade700 : Colors.grey.shade600,
@@ -475,7 +478,7 @@ class _LocalAiModeToggle extends StatelessWidget {
           ),
           Switch(
             value: viewModel.isLocalAiMode,
-            onChanged: (value) => viewModel.toggleLocalAiMode(),
+            onChanged: kIsWeb ? null : (value) => viewModel.toggleLocalAiMode(),
             activeColor: Colors.blue,
           ),
         ],

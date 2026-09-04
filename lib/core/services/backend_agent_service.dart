@@ -179,6 +179,10 @@ class BackendAgentService implements AgentExecutionService {
     String userPrompt, {
     bool isCodingTask = false,
   }) async* {
+    if (kIsWeb) {
+      throw UnsupportedError('Local AI inference is not supported on the Web platform.');
+    }
+
     yield AgentExecution(
       id: executionId,
       agentId: agent.id,
