@@ -65,17 +65,19 @@ Kindle leverages specialized, role-based agents for maximum precision:
 ## ⚙️ How It Works
 
 ```mermaid
-graph TD
-    A[Idea] --> B[Discovery Agent]
-    B --> C[Architecture Blueprint]
-    C --> D[Decomposer Agent]
-    D --> E[Task Graph]
-    E -- Delegation --> F[On-Device AI Inference]
-    F --> G[Integrator Agent]
-    G --> H[Build & Test Agents]
-    H -- Verified --> I[Final Application]
-    H -- Failure --> J[Debug Loop]
-    J --> E
+flowchart TD
+    Idea([Idea]) --> DiscoveryAgent[Discovery Agent]
+    DiscoveryAgent --> Blueprint[Architecture Blueprint]
+    Blueprint --> DecomposerAgent[Decomposer Agent]
+    DecomposerAgent --> TaskGraph[Task Graph]
+
+    TaskGraph -->|Delegation| OnDeviceAI[On-Device AI Inference]
+    OnDeviceAI --> IntegratorAgent[Integrator Agent]
+    IntegratorAgent --> BuildTestAgents[Build & Test Agents]
+
+    BuildTestAgents -->|Verified| FinalApp([Final Application])
+    BuildTestAgents -->|Failure| DebugLoop[Debug Loop]
+    DebugLoop --> TaskGraph
 ```
 
 ---
