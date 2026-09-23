@@ -13,7 +13,11 @@ import '../../project/models/architecture.dart';
 import '../../project/models/module.dart';
 
 import '../models/file_node.dart';
+import '../../project/models/file_change.dart';
 import '../../project/models/coding_result.dart';
+import '../../project/models/build.dart';
+import '../../project/models/test_run.dart';
+import '../../project/models/artifact.dart';
 import '../../../core/utils/dev_logger.dart';
 
 class WorkspaceViewModel extends ChangeNotifier {
@@ -99,18 +103,117 @@ class WorkspaceViewModel extends ChangeNotifier {
   }
 
   void _initializeFileSystem() {
-    // Initial basic structure
     _virtualFileSystem = [
       FileNode(
         name: 'lib',
         isFolder: true,
         isExpanded: true,
         children: [
-          FileNode(name: 'main.dart', content: 'void main() {\n  runApp(const KindleApp());\n}'),
+          FileNode(
+            name: 'main.dart',
+            content: "import 'package:flutter/material.dart';\nimport 'core/theme/app_theme.dart';\nimport 'features/auth/screens/login_screen.dart';\n\nvoid main() {\n  runApp(const SyncTasksApp());\n}\n\nclass SyncTasksApp extends StatelessWidget {\n  const SyncTasksApp({super.key});\n\n  @override\n  Widget build(BuildContext context) {\n    return MaterialApp(\n      title: 'SyncTasks',\n      theme: AppTheme.lightTheme,\n      debugShowCheckedModeBanner: false,\n      home: const LoginScreen(),\n    );\n  }\n}",
+          ),
+          FileNode(
+            name: 'core',
+            isFolder: true,
+            isExpanded: true,
+            children: [
+              FileNode(
+                name: 'theme',
+                isFolder: true,
+                isExpanded: true,
+                children: [
+                  FileNode(
+                    name: 'app_colors.dart',
+                    content: "import 'package:flutter/material.dart';\n\nclass AppColors {\n  static const Color primary = Color(0xFF2563EB);\n  static const Color secondary = Color(0xFF3B82F6);\n  static const Color background = Color(0xFFF8FAFC);\n  static const Color surface = Colors.white;\n  static const Color textPrimary = Color(0xFF0F172A);\n  static const Color textSecondary = Color(0xFF64748B);\n}",
+                  ),
+                  FileNode(
+                    name: 'app_theme.dart',
+                    content: "import 'package:flutter/material.dart';\nimport 'app_colors.dart';\n\nclass AppTheme {\n  static ThemeData get lightTheme {\n    return ThemeData(\n      useMaterial3: true,\n      primaryColor: AppColors.primary,\n      scaffoldBackgroundColor: AppColors.background,\n      colorScheme: ColorScheme.fromSeed(\n        seedColor: AppColors.primary,\n        surface: AppColors.surface,\n      ),\n    );\n  }\n}",
+                  ),
+                ],
+              ),
+              FileNode(
+                name: 'services',
+                isFolder: true,
+                isExpanded: true,
+                children: [
+                  FileNode(
+                    name: 'sync_engine.dart',
+                    content: "import 'dart:async';\nimport '../../features/tasks/models/task_model.dart';\n\nclass SyncEngine {\n  bool _isSyncing = false;\n  bool get isSyncing => _isSyncing;\n\n  Future<void> syncTasks(List<TaskModel> localTasks) async {\n    _isSyncing = true;\n    await Future.delayed(const Duration(seconds: 1));\n    _isSyncing = false;\n  }\n}",
+                  ),
+                ],
+              ),
+            ],
+          ),
+          FileNode(
+            name: 'features',
+            isFolder: true,
+            isExpanded: true,
+            children: [
+              FileNode(
+                name: 'auth',
+                isFolder: true,
+                isExpanded: true,
+                children: [
+                  FileNode(
+                    name: 'screens',
+                    isFolder: true,
+                    isExpanded: true,
+                    children: [
+                      FileNode(
+                        name: 'login_screen.dart',
+                        content: "import 'package:flutter/material.dart';\nimport '../../tasks/screens/task_list_screen.dart';\n\nclass LoginScreen extends StatefulWidget {\n  const LoginScreen({super.key});\n\n  @override\n  State<LoginScreen> createState() => _LoginScreenState();\n}\n\nclass _LoginScreenState extends State<LoginScreen> {\n  final _emailController = TextEditingController();\n  final _passwordController = TextEditingController();\n\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(\n      appBar: AppBar(title: const Text('SyncTasks Login')),\n      body: Padding(\n        padding: const EdgeInsets.all(24.0),\n        child: Column(\n          mainAxisAlignment: MainAxisAlignment.center,\n          children: [\n            TextField(\n              controller: _emailController,\n              decoration: const InputDecoration(labelText: 'Email'),\n            ),\n            const SizedBox(height: 16),\n            TextField(\n              controller: _passwordController,\n              obscureText: true,\n              decoration: const InputDecoration(labelText: 'Password'),\n            ),\n            const SizedBox(height: 24),\n            ElevatedButton(\n              onPressed: () {\n                Navigator.pushReplacement(\n                  context,\n                  MaterialPageRoute(builder: (_) => const TaskListScreen()),\n                );\n              },\n              child: const Text('Sign In'),\n            ),\n          ],\n        ),\n      ),\n    );\n  }\n}",
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              FileNode(
+                name: 'tasks',
+                isFolder: true,
+                isExpanded: true,
+                children: [
+                  FileNode(
+                    name: 'models',
+                    isFolder: true,
+                    isExpanded: true,
+                    children: [
+                      FileNode(
+                        name: 'task_model.dart',
+                        content: "enum TaskPriority { low, medium, high }\n\nclass TaskModel {\n  final String id;\n  final String title;\n  final String description;\n  final bool isCompleted;\n  final TaskPriority priority;\n  final DateTime createdAt;\n\n  const TaskModel({\n    required this.id,\n    required this.title,\n    required this.description,\n    this.isCompleted = false,\n    this.priority = TaskPriority.medium,\n    required this.createdAt,\n  });\n}",
+                      ),
+                    ],
+                  ),
+                  FileNode(
+                    name: 'screens',
+                    isFolder: true,
+                    isExpanded: true,
+                    children: [
+                      FileNode(
+                        name: 'task_list_screen.dart',
+                        content: "import 'package:flutter/material.dart';\nimport '../models/task_model.dart';\nimport 'task_detail_screen.dart';\n\nclass TaskListScreen extends StatefulWidget {\n  const TaskListScreen({super.key});\n\n  @override\n  State<TaskListScreen> createState() => _TaskListScreenState();\n}\n\nclass _TaskListScreenState extends State<TaskListScreen> {\n  final List<TaskModel> _tasks = [\n    TaskModel(\n      id: '1',\n      title: 'Initialize SyncTasks App',\n      description: 'Setup base MVVM architecture and theme tokens.',\n      isCompleted: true,\n      createdAt: DateTime.now(),\n    ),\n    TaskModel(\n      id: '2',\n      title: 'Setup Authentication',\n      description: 'Implement multi-device session login.',\n      isCompleted: false,\n      createdAt: DateTime.now(),\n    ),\n    TaskModel(\n      id: '3',\n      title: 'Cloud Sync Logic',\n      description: 'Connect local SQLite DB with Firestore sync.',\n      isCompleted: false,\n      createdAt: DateTime.now(),\n    ),\n  ];\n\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(\n      appBar: AppBar(title: const Text('SyncTasks Dashboard')),\n      body: ListView.builder(\n        itemCount: _tasks.length,\n        itemBuilder: (context, index) {\n          final task = _tasks[index];\n          return ListTile(\n            leading: Checkbox(\n              value: task.isCompleted,\n              onChanged: (val) {\n                setState(() {\n                  _tasks[index] = TaskModel(\n                    id: task.id,\n                    title: task.title,\n                    description: task.description,\n                    isCompleted: val ?? false,\n                    priority: task.priority,\n                    createdAt: task.createdAt,\n                  );\n                });\n              },\n            ),\n            title: Text(task.title, style: TextStyle(decoration: task.isCompleted ? TextDecoration.lineThrough : null)),\n            subtitle: Text(task.description),\n            onTap: () {\n              Navigator.push(\n                context,\n                MaterialPageRoute(builder: (_) => TaskDetailScreen(task: task)),\n              );\n            },\n          );\n        },\n      ),\n      floatingActionButton: FloatingActionButton(\n        onPressed: () {},\n        child: const Icon(Icons.add),\n      ),\n    );\n  }\n}",
+                      ),
+                      FileNode(
+                        name: 'task_detail_screen.dart',
+                        content: "import 'package:flutter/material.dart';\nimport '../models/task_model.dart';\n\nclass TaskDetailScreen extends StatelessWidget {\n  final TaskModel task;\n\n  const TaskDetailScreen({super.key, required this.task});\n\n  @override\n  Widget build(BuildContext context) {\n    return Scaffold(\n      appBar: AppBar(title: Text(task.title)),\n      body: Padding(\n        padding: const EdgeInsets.all(24.0),\n        child: Column(\n          crossAxisAlignment: CrossAxisAlignment.start,\n          children: [\n            Text('Priority: \${task.priority.name.toUpperCase()}', style: const TextStyle(fontWeight: FontWeight.bold)),\n            const SizedBox(height: 12),\n            Text(task.description, style: const TextStyle(fontSize: 16)),\n          ],\n        ),\n      ),\n    );\n  }\n}",
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
         ],
       ),
-      FileNode(name: 'pubspec.yaml', content: 'name: ${_project.name.toLowerCase().replaceAll(' ', '_')}\ndependencies:\n  flutter:\n    sdk: flutter'),
-      FileNode(name: 'README.md', content: '# ${_project.name}\n\n${_project.description}'),
+      FileNode(
+        name: 'pubspec.yaml',
+        content: 'name: sync_tasks\ndescription: A robust To-Do application for cross-device productivity.\npublish_to: "none"\nversion: 1.0.0+1\n\nenvironment:\n  sdk: ">=3.0.0 <4.0.0"\n\ndependencies:\n  flutter:\n    sdk: flutter\n  provider: ^6.1.1\n  shared_preferences: ^2.2.2\n  intl: ^0.19.0',
+      ),
+      FileNode(
+        name: 'README.md',
+        content: '# SyncTasks 🔥\n\nA robust To-Do application for cross-device productivity. SyncTasks allows users to manage their daily schedules with real-time cloud synchronization between mobile and desktop.\n\n## Architecture\n- **Pattern**: MVVM (Model-View-ViewModel)\n- **State Management**: Provider\n- **Persistence**: Shared Preferences & Cloud Sync Engine',
+      ),
     ];
   }
 
@@ -192,7 +295,7 @@ class WorkspaceViewModel extends ChangeNotifier {
           
           if (_activeExecution?.result is CodingResult) {
             DevLogger.log('WorkspaceViewModel: Applying real file generation for task ${nextTask.id}');
-            _applyCodingResult(_activeExecution!.result as CodingResult);
+            _applyCodingResult(_activeExecution!.result as CodingResult, task: nextTask, agent: agent);
           } else {
             DevLogger.log('WorkspaceViewModel: No coding result found, falling back to simulation');
             _simulateFileGeneration(nextTask);
@@ -227,8 +330,10 @@ class WorkspaceViewModel extends ChangeNotifier {
     return paths;
   }
 
-  void _applyCodingResult(CodingResult result) {
+  void _applyCodingResult(CodingResult result, {required Task task, required Agent agent}) {
     DevLogger.log('WorkspaceViewModel: Applying ${result.changes.length} file changes');
+    final newFileChanges = List<FileChange>.from(_project.fileChanges);
+
     for (final change in result.changes) {
       DevLogger.log('WorkspaceViewModel: Processing [${change.type}] ${change.path}');
       if (change.type == 'delete') {
@@ -236,7 +341,27 @@ class WorkspaceViewModel extends ChangeNotifier {
       } else {
         _addOrUpdateFileInSystem(change.path, change.content);
       }
+
+      FileChangeType changeType = FileChangeType.modified;
+      if (change.type == 'create') {
+        changeType = FileChangeType.created;
+      } else if (change.type == 'delete') {
+        changeType = FileChangeType.deleted;
+      }
+
+      newFileChanges.add(
+        FileChange(
+          id: 'fc_${DateTime.now().millisecondsSinceEpoch}_${newFileChanges.length}',
+          filePath: change.path,
+          type: changeType,
+          agentName: agent.name,
+          taskTitle: task.title,
+          timestamp: DateTime.now(),
+        ),
+      );
     }
+
+    _project = _project.copyWith(fileChanges: newFileChanges);
     notifyListeners();
   }
 
@@ -406,6 +531,104 @@ class WorkspaceViewModel extends ChangeNotifier {
 
   void stopDevelopment() {
     _isDeveloping = false;
+    notifyListeners();
+  }
+
+  void runBuild(String platform) {
+    DevLogger.log('WorkspaceViewModel: Triggering build for platform $platform');
+    final newBuilds = List<ProjectBuild>.from(_project.builds);
+    newBuilds.add(
+      ProjectBuild(
+        id: 'b_${DateTime.now().millisecondsSinceEpoch}',
+        platform: platform,
+        status: BuildStatus.successful,
+        progress: 1.0,
+        startedAt: DateTime.now().subtract(const Duration(minutes: 2)),
+        completedAt: DateTime.now(),
+        artifact: BuildArtifact(
+          name: '${_project.name.toLowerCase()}-$platform.apk',
+          size: '24.5 MB',
+          type: platform.toUpperCase(),
+          downloadUrl: '#',
+        ),
+      ),
+    );
+    _project = _project.copyWith(builds: newBuilds);
+    notifyListeners();
+  }
+
+  void runTests() {
+    DevLogger.log('WorkspaceViewModel: Running QA test suite');
+    final newTestRuns = List<TestRun>.from(_project.testRuns);
+    newTestRuns.add(
+      TestRun(
+        id: 'tr_${DateTime.now().millisecondsSinceEpoch}',
+        category: TestCategory.unit,
+        status: TestStatus.passed,
+        startedAt: DateTime.now().subtract(const Duration(minutes: 1)),
+        completedAt: DateTime.now(),
+        totalCount: 15,
+        passedCount: 15,
+        failedCount: 0,
+        skippedCount: 0,
+        coverage: 0.92,
+        testCases: const [
+          TestCase(
+            id: 'tc1',
+            name: 'Theme Tokens Initialization',
+            suite: 'core/theme_test.dart',
+            status: TestStatus.passed,
+            duration: Duration(milliseconds: 140),
+            logs: ['Checking light theme...', 'Checking dark theme...', 'Pass.'],
+            relatedFiles: ['lib/core/theme/app_theme.dart'],
+          ),
+          TestCase(
+            id: 'tc2',
+            name: 'SyncEngine Initialization',
+            suite: 'core/services/sync_engine_test.dart',
+            status: TestStatus.passed,
+            duration: Duration(milliseconds: 210),
+            logs: ['Verifying cloud connection...', 'Pass.'],
+            relatedFiles: ['lib/core/services/sync_engine.dart'],
+          ),
+        ],
+      ),
+    );
+    _project = _project.copyWith(testRuns: newTestRuns);
+    notifyListeners();
+  }
+
+  void generateArtifacts() {
+    DevLogger.log('WorkspaceViewModel: Generating project artifacts');
+    final newArtifacts = List<ProjectArtifact>.from(_project.artifacts);
+    final now = DateTime.now();
+    newArtifacts.addAll([
+      ProjectArtifact(
+        id: 'art_src_${now.millisecondsSinceEpoch}',
+        name: 'Source Code Bundle',
+        type: ArtifactType.sourceCode,
+        generatedAt: now,
+        status: ArtifactStatus.current,
+        size: '1.8 MB',
+      ),
+      ProjectArtifact(
+        id: 'art_arch_${now.millisecondsSinceEpoch}',
+        name: 'Technical Architecture Blueprint',
+        type: ArtifactType.architecture,
+        generatedAt: now,
+        status: ArtifactStatus.current,
+        size: '420 KB',
+      ),
+      ProjectArtifact(
+        id: 'art_test_${now.millisecondsSinceEpoch}',
+        name: 'QA Test Execution Report',
+        type: ArtifactType.testReport,
+        generatedAt: now,
+        status: ArtifactStatus.current,
+        size: '850 KB',
+      ),
+    ]);
+    _project = _project.copyWith(artifacts: newArtifacts);
     notifyListeners();
   }
 

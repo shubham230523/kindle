@@ -9,6 +9,7 @@ import '../../features/project/models/technology_dependency.dart';
 import '../../features/project/models/development_plan.dart';
 import '../../features/project/models/phase.dart';
 import '../../features/project/models/task.dart';
+import '../../features/project/models/file_change.dart';
 
 class MockProject {
   static Project get syncTasks {
@@ -29,14 +30,14 @@ class MockProject {
               phaseId: 'p1',
               title: 'Initialize Project',
               description: 'Create the base project structure and repository.',
-              status: TaskStatus.todo,
+              status: TaskStatus.done,
             ),
             Task(
               id: 't2',
               phaseId: 'p1',
               title: 'Setup Authentication',
               description: 'Implement user login and registration.',
-              status: TaskStatus.todo,
+              status: TaskStatus.done,
             ),
           ],
         ),
@@ -50,14 +51,14 @@ class MockProject {
               phaseId: 'p2',
               title: 'Task CRUD',
               description: 'Implement Create, Read, Update, and Delete for tasks.',
-              status: TaskStatus.todo,
+              status: TaskStatus.done,
             ),
             Task(
               id: 't4',
               phaseId: 'p2',
               title: 'Cloud Sync Engine',
               description: 'Implement real-time data synchronization logic.',
-              status: TaskStatus.todo,
+              status: TaskStatus.done,
             ),
           ],
         ),
@@ -85,7 +86,7 @@ class MockProject {
           'A robust To-Do application for cross-device productivity. SyncTasks allows users to manage their daily schedules with real-time cloud synchronization between mobile and desktop.',
       targetUsers: 'Productive professionals and students',
       problemStatement: 'Difficulty keeping task lists updated across multiple devices.',
-      status: ProjectStatus.draft,
+      status: ProjectStatus.completed,
       createdAt: DateTime.now(),
       selectedTechnology: 'flutter',
       selectedBackend: 'firebase',
@@ -132,7 +133,48 @@ class MockProject {
       ],
       developmentPlan: dummyPlan,
       architecture: defaultArchitecture,
-      fileChanges: const [],
+      fileChanges: [
+        FileChange(
+          id: 'fc1',
+          filePath: 'lib/main.dart',
+          type: FileChangeType.created,
+          agentName: 'Architecture Agent',
+          taskTitle: 'Initialize Project',
+          timestamp: DateTime.now().subtract(const Duration(minutes: 30)),
+        ),
+        FileChange(
+          id: 'fc2',
+          filePath: 'lib/core/theme/app_theme.dart',
+          type: FileChangeType.created,
+          agentName: 'Coding Agent',
+          taskTitle: 'Initialize Project',
+          timestamp: DateTime.now().subtract(const Duration(minutes: 25)),
+        ),
+        FileChange(
+          id: 'fc3',
+          filePath: 'lib/features/auth/screens/login_screen.dart',
+          type: FileChangeType.created,
+          agentName: 'Coding Agent',
+          taskTitle: 'Setup Authentication',
+          timestamp: DateTime.now().subtract(const Duration(minutes: 20)),
+        ),
+        FileChange(
+          id: 'fc4',
+          filePath: 'lib/features/tasks/screens/task_list_screen.dart',
+          type: FileChangeType.created,
+          agentName: 'Coding Agent',
+          taskTitle: 'Task CRUD',
+          timestamp: DateTime.now().subtract(const Duration(minutes: 15)),
+        ),
+        FileChange(
+          id: 'fc5',
+          filePath: 'lib/core/services/sync_engine.dart',
+          type: FileChangeType.created,
+          agentName: 'Coding Agent',
+          taskTitle: 'Cloud Sync Engine',
+          timestamp: DateTime.now().subtract(const Duration(minutes: 10)),
+        ),
+      ],
       builds: const [],
       testRuns: const [],
       fixHistory: const [],

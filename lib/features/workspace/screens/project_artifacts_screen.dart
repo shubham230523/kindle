@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../viewmodels/workspace_viewmodel.dart';
 import '../../project/models/project.dart';
 import '../../project/models/artifact.dart';
 import '../../../shared/widgets/kindle_card.dart';
 import '../../../shared/widgets/section_title.dart';
+import '../../../shared/widgets/kindle_button.dart';
 import '../../../shared/widgets/empty_state.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/responsive_layout.dart';
@@ -15,17 +18,33 @@ class ProjectArtifactsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final artifacts = project.artifacts;
+    final viewModel = context.watch<WorkspaceViewModel>();
+    final artifacts = viewModel.project.artifacts;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Project Artifacts'),
       ),
       body: artifacts.isEmpty
-          ? const KindleEmptyState(
-              title: 'No Project Artifacts',
-              message: 'Central repository for generated deliverables will appear here as artifacts are created.',
-              icon: Icons.inventory_2_outlined,
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const KindleEmptyState(
+                    title: 'No Project Artifacts',
+                    message: 'Central repository for generated deliverables will appear here as artifacts are created.',
+                    icon: Icons.inventory_2_outlined,
+                  ),
+                  const SizedBox(height: AppConstants.spacingMd),
+                  KindleButton(
+                    text: 'Generate Deliverables',
+                    icon: Icons.inventory_2,
+                    onPressed: () {
+                      context.read<WorkspaceViewModel>().generateArtifacts();
+                    },
+                  ),
+                ],
+              ),
             )
           : Center(
               child: ConstrainedBox(

@@ -2,6 +2,8 @@ import 'build_log_screen.dart';
 import 'widgets/build_analysis_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../viewmodels/workspace_viewmodel.dart';
 import '../../project/models/project.dart';
 import '../../project/models/build.dart';
 import '../../../shared/widgets/kindle_card.dart';
@@ -24,17 +26,33 @@ class BuildDashboardScreen extends StatefulWidget {
 class _BuildDashboardScreenState extends State<BuildDashboardScreen> {
   @override
   Widget build(BuildContext context) {
-    final builds = widget.project.builds;
+    final viewModel = context.watch<WorkspaceViewModel>();
+    final builds = viewModel.project.builds;
 
     if (builds.isEmpty) {
       return Scaffold(
         appBar: AppBar(
           title: const Text('Builds & Deployments'),
         ),
-        body: const KindleEmptyState(
-          title: 'No Builds Yet',
-          message: 'Build artifacts and deployment status will appear here when builds run.',
-          icon: Icons.build_circle_outlined,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const KindleEmptyState(
+                title: 'No Builds Yet',
+                message: 'Build artifacts and deployment status will appear here when builds run.',
+                icon: Icons.build_circle_outlined,
+              ),
+              const SizedBox(height: AppConstants.spacingMd),
+              KindleButton(
+                text: 'Trigger Android Build',
+                icon: Icons.play_arrow,
+                onPressed: () {
+                  context.read<WorkspaceViewModel>().runBuild('Android');
+                },
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -45,7 +63,12 @@ class _BuildDashboardScreenState extends State<BuildDashboardScreen> {
       appBar: AppBar(
         title: const Text('Builds & Deployments'),
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: () {}),
+          IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () {
+              context.read<WorkspaceViewModel>().runBuild('Android');
+            },
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -147,8 +170,10 @@ class _ActiveBuildCard extends StatelessWidget {
           SizedBox(
             width: double.infinity,
             child: KindleButton.secondary(
-              text: projectBuild.status == BuildStatus.running ? 'Cancel Build' : 'New Build',
-              onPressed: () {},
+              text: 'New Build',
+              onPressed: () {
+                context.read<WorkspaceViewModel>().runBuild('iOS');
+              },
             ),
           ),
         ],

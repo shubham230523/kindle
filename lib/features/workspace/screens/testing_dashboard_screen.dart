@@ -1,6 +1,8 @@
 import 'test_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../viewmodels/workspace_viewmodel.dart';
 import '../../project/models/project.dart';
 import '../../project/models/test_run.dart';
 import '../../../shared/widgets/kindle_card.dart';
@@ -23,17 +25,33 @@ class TestingDashboardScreen extends StatefulWidget {
 class _TestingDashboardScreenState extends State<TestingDashboardScreen> {
   @override
   Widget build(BuildContext context) {
-    final runs = widget.project.testRuns;
+    final viewModel = context.watch<WorkspaceViewModel>();
+    final runs = viewModel.project.testRuns;
 
     if (runs.isEmpty) {
       return Scaffold(
         appBar: AppBar(
           title: const Text('Testing & QA'),
         ),
-        body: const KindleEmptyState(
-          title: 'No Test Runs Executed',
-          message: 'Test execution results and QA reports will appear here when tests are run.',
-          icon: Icons.bug_report_outlined,
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const KindleEmptyState(
+                title: 'No Test Runs Executed',
+                message: 'Test execution results and QA reports will appear here when tests are run.',
+                icon: Icons.bug_report_outlined,
+              ),
+              const SizedBox(height: AppConstants.spacingMd),
+              KindleButton(
+                text: 'Run QA Test Suite',
+                icon: Icons.play_arrow,
+                onPressed: () {
+                  context.read<WorkspaceViewModel>().runTests();
+                },
+              ),
+            ],
+          ),
         ),
       );
     }
@@ -42,7 +60,12 @@ class _TestingDashboardScreenState extends State<TestingDashboardScreen> {
       appBar: AppBar(
         title: const Text('Testing & QA'),
         actions: [
-          IconButton(icon: const Icon(Icons.refresh), onPressed: () {}),
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            onPressed: () {
+              context.read<WorkspaceViewModel>().runTests();
+            },
+          ),
         ],
       ),
       body: SingleChildScrollView(
@@ -105,7 +128,9 @@ class _OverviewSection extends StatelessWidget {
           const Divider(height: AppConstants.spacingLg),
           KindleButton(
             text: 'Run All Tests',
-            onPressed: () {},
+            onPressed: () {
+              context.read<WorkspaceViewModel>().runTests();
+            },
             icon: Icons.play_arrow,
           ),
         ],
