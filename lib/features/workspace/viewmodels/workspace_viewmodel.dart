@@ -6,6 +6,8 @@ import '../../project/models/agent_execution.dart';
 import '../../project/models/task.dart';
 import '../../../core/services/agent_simulator_service.dart';
 import '../../../core/services/model_downloader_service.dart';
+import '../../../core/services/build_runner_service.dart';
+import '../../project/models/build_log.dart';
 
 import '../../project/models/phase.dart';
 import '../../project/models/development_plan.dart';
@@ -23,6 +25,7 @@ import '../../../core/utils/dev_logger.dart';
 class WorkspaceViewModel extends ChangeNotifier {
   final AgentExecutionService _executionService;
   final ModelDownloaderService _downloaderService = ModelDownloaderService();
+  final BuildRunnerService _buildRunnerService = BuildRunnerService();
   
   Project _project;
   Project get project => _project;
@@ -535,26 +538,42 @@ class WorkspaceViewModel extends ChangeNotifier {
   }
 
   void runBuild(String platform) {
-    DevLogger.log('WorkspaceViewModel: Triggering build for platform $platform');
-    final newBuilds = List<ProjectBuild>.from(_project.builds);
-    newBuilds.add(
-      ProjectBuild(
-        id: 'b_${DateTime.now().millisecondsSinceEpoch}',
-        platform: platform,
-        status: BuildStatus.successful,
-        progress: 1.0,
-        startedAt: DateTime.now().subtract(const Duration(minutes: 2)),
-        completedAt: DateTime.now(),
-        artifact: BuildArtifact(
-          name: '${_project.name.toLowerCase()}-$platform.apk',
-          size: '24.5 MB',
-          type: platform.toUpperCase(),
-          downloadUrl: '#',
+    DevLogger.log('WorkspaceViewModel: Triggering real build for platform $platform');
+    
+    final buildId = 'b_${DateTime.now().millisecondsSinceEpoch}';
+    final initialBuild = ProjectBuild(
+      id: buildId,
+      platform: platform,
+      status: BuildStatus.running,
+      progress: 0.05,
+      startedAt: DateTime.now(),
+      logs: [
+        BuildLogEntry(
+          timestamp: DateTime.now(),
+          message: 'Initializing real build process for $platform...',
+          level: BuildLogLevel.info,
         ),
-      ),
+      ],
     );
+
+    final newBuilds = List<ProjectBuild>.from(_project.builds);
+    newBuilds.insert(0, initialBuild);
     _project = _project.copyWith(builds: newBuilds);
     notifyListeners();
+
+    _buildRunnerService.runBuild(
+      build: initialBuild,
+      projectPath: '',
+      onUpdate: (updatedBuild) {
+        final currentBuilds = List<ProjectBuild>.from(_project.builds);
+        final index = currentBuilds.indexWhere((b) => b.id == updatedBuild.id);
+        if (index != -1) {
+          currentBuilds[index] = updatedBuild;
+          _project = _project.copyWith(builds: currentBuilds);
+          notifyListeners();
+        }
+      },
+    );
   }
 
   void runTests() {

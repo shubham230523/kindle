@@ -1,4 +1,5 @@
 import 'build_analysis.dart';
+import 'build_log.dart';
 
 enum BuildStatus { queued, running, successful, failed }
 
@@ -44,6 +45,7 @@ class ProjectBuild {
   final BuildArtifact? artifact;
   final String? errorMessage;
   final BuildFailureAnalysis? failureAnalysis;
+  final List<BuildLogEntry> logs;
 
   const ProjectBuild({
     required this.id,
@@ -55,6 +57,7 @@ class ProjectBuild {
     this.artifact,
     this.errorMessage,
     this.failureAnalysis,
+    this.logs = const [],
   });
 
   Duration? get duration {
@@ -69,6 +72,7 @@ class ProjectBuild {
     BuildArtifact? artifact,
     String? errorMessage,
     BuildFailureAnalysis? failureAnalysis,
+    List<BuildLogEntry>? logs,
   }) {
     return ProjectBuild(
       id: id,
@@ -80,6 +84,7 @@ class ProjectBuild {
       artifact: artifact ?? this.artifact,
       errorMessage: errorMessage ?? this.errorMessage,
       failureAnalysis: failureAnalysis ?? this.failureAnalysis,
+      logs: logs ?? this.logs,
     );
   }
 
@@ -94,6 +99,7 @@ class ProjectBuild {
       'artifact': artifact?.toMap(),
       'errorMessage': errorMessage,
       'failureAnalysis': failureAnalysis?.toMap(),
+      'logs': logs.map((x) => x.toMap()).toList(),
     };
   }
 
@@ -111,6 +117,7 @@ class ProjectBuild {
       artifact: map['artifact'] != null ? BuildArtifact.fromMap(map['artifact']) : null,
       errorMessage: map['errorMessage'],
       failureAnalysis: map['failureAnalysis'] != null ? BuildFailureAnalysis.fromMap(map['failureAnalysis']) : null,
+      logs: (map['logs'] as List? ?? []).map((x) => BuildLogEntry.fromMap(x)).toList(),
     );
   }
 }

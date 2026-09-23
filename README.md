@@ -38,6 +38,7 @@ When running on the Web, Kindle requires a Cloud AI provider (like OpenRouter). 
 *   **Universal Prompt Delegation**: A hybrid architecture that allows the backend to orchestrate the "Lang Graph" while delegating heavy inference tasks to the client's local hardware.
 *   **On-Device AI Inference**: Integrated with `llama_cpp_dart` (v0.9.x), Kindle runs quantized GGUF models (like Qwen2.5-Coder) directly on Windows, macOS, Android, and iOS using background Dart Isolates for zero UI lag.
 *   **Task-Based Agent Graph**: An advanced orchestration engine inspired by LangGraph that manages complex task dependencies and parallel multi-agent execution waves.
+*   **Real-Time Build Execution Pipeline**: Triggers and manages actual background build processes (Android APKs, Windows Executables, Web targets, etc.) with real-time stdout/stderr log streaming and automatic artifact generation.
 *   **Granular Atomic Decomposition**: Automatically breaks features into "atomic" units (max 1-2 files per agent). This ensures that even small local models can generate high-precision code without logical drift.
 *   **Download-on-Launch Architecture**: A "thin client" approach that downloads optimized AI models (~1.2GB) on first launch, ensuring the app remains lightweight while providing full offline intelligence.
 *   **Deep Behavioral Simulation**: A robust mock engine that mimics real LLM responses, allowing developers to verify project "plumbing" and integration logic with zero API cost.

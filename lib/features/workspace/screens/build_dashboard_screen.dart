@@ -24,10 +24,23 @@ class BuildDashboardScreen extends StatefulWidget {
 }
 
 class _BuildDashboardScreenState extends State<BuildDashboardScreen> {
+  String _getDefaultPlatform(Project project) {
+    if (project.platforms.isNotEmpty) {
+      final p = project.platforms.first.toLowerCase();
+      if (p == 'android') return 'Android';
+      if (p == 'ios') return 'iOS';
+      if (p == 'web') return 'Web';
+      if (p == 'windows') return 'Windows';
+      return project.platforms.first;
+    }
+    return 'Android';
+  }
+
   @override
   Widget build(BuildContext context) {
     final viewModel = context.watch<WorkspaceViewModel>();
     final builds = viewModel.project.builds;
+    final defaultPlatform = _getDefaultPlatform(viewModel.project);
 
     if (builds.isEmpty) {
       return Scaffold(
@@ -45,10 +58,10 @@ class _BuildDashboardScreenState extends State<BuildDashboardScreen> {
               ),
               const SizedBox(height: AppConstants.spacingMd),
               KindleButton(
-                text: 'Trigger Android Build',
+                text: 'Trigger $defaultPlatform Build',
                 icon: Icons.play_arrow,
                 onPressed: () {
-                  context.read<WorkspaceViewModel>().runBuild('Android');
+                  context.read<WorkspaceViewModel>().runBuild(defaultPlatform);
                 },
               ),
             ],
@@ -65,8 +78,9 @@ class _BuildDashboardScreenState extends State<BuildDashboardScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.add),
+            tooltip: 'Trigger New Build',
             onPressed: () {
-              context.read<WorkspaceViewModel>().runBuild('Android');
+              context.read<WorkspaceViewModel>().runBuild(defaultPlatform);
             },
           ),
         ],
@@ -89,13 +103,20 @@ class _BuildDashboardScreenState extends State<BuildDashboardScreen> {
                         ),
                       );
                     },
-                    child: _ActiveBuildCard(projectBuild: activeBuild),
+                    child: _ActiveBuildCard(
+                      projectBuild: activeBuild,
+                      onTriggerBuild: () {
+                        context.read<WorkspaceViewModel>().runBuild(defaultPlatform);
+                      },
+                    ),
                   ),
                   if (activeBuild.status == BuildStatus.failed && activeBuild.failureAnalysis != null) ...[
                     const SizedBox(height: AppConstants.spacingLg),
                     BuildAnalysisWidget(
                       analysis: activeBuild.failureAnalysis!,
-                      onRetry: () {},
+                      onRetry: () {
+                        context.read<WorkspaceViewModel>().runBuild(activeBuild.platform);
+                      },
                       onFix: () {},
                     ),
                   ],
@@ -115,7 +136,12 @@ class _BuildDashboardScreenState extends State<BuildDashboardScreen> {
 
 class _ActiveBuildCard extends StatelessWidget {
   final ProjectBuild projectBuild;
-  const _ActiveBuildCard({required this.projectBuild});
+  final VoidCallback onTriggerBuild;
+
+  const _ActiveBuildCard({
+    required this.projectBuild,
+    required this.onTriggerBuild,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -171,9 +197,7 @@ class _ActiveBuildCard extends StatelessWidget {
             width: double.infinity,
             child: KindleButton.secondary(
               text: 'New Build',
-              onPressed: () {
-                context.read<WorkspaceViewModel>().runBuild('iOS');
-              },
+              onPressed: onTriggerBuild,
             ),
           ),
         ],

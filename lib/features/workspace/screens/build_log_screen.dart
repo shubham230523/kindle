@@ -1,6 +1,7 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../viewmodels/workspace_viewmodel.dart';
 import '../../project/models/build.dart';
 import '../../project/models/build_log.dart';
 
@@ -16,21 +17,17 @@ class BuildLogScreen extends StatefulWidget {
 class _BuildLogScreenState extends State<BuildLogScreen> {
   final ScrollController _scrollController = ScrollController();
   final TextEditingController _searchController = TextEditingController();
-  final List<BuildLogEntry> _allLogs = [];
-  List<BuildLogEntry> _filteredLogs = [];
   bool _autoScroll = true;
-  Timer? _simulationTimer;
+  int _previousLogCount = 0;
 
   @override
   void initState() {
     super.initState();
     _searchController.addListener(_onSearchChanged);
-    _startLogSimulation();
   }
 
   @override
   void dispose() {
-    _simulationTimer?.cancel();
     _searchController.removeListener(_onSearchChanged);
     _searchController.dispose();
     _scrollController.dispose();
@@ -38,66 +35,7 @@ class _BuildLogScreenState extends State<BuildLogScreen> {
   }
 
   void _onSearchChanged() {
-    setState(() {
-      final query = _searchController.text.toLowerCase();
-      if (query.isEmpty) {
-        _filteredLogs = List.from(_allLogs);
-      } else {
-        _filteredLogs = _allLogs
-            .where((log) => log.message.toLowerCase().contains(query))
-            .toList();
-      }
-    });
-  }
-
-  void _startLogSimulation() {
-    final mockMessages = [
-      'Checking flutter toolchain...',
-      'Found Flutter 3.47.0 at /usr/local/flutter',
-      'Resolving dependencies...',
-      'dependency_one: ^1.2.0 (new)',
-      'dependency_two: ^0.8.5 (upgraded)',
-      'Downloading dependencies...',
-      'Running build_runner...',
-      'Compiling architecture modules...',
-      'Compiling lib/main.dart...',
-      '[WARNING] Found deprecated API usage in lib/core/utils.dart',
-      'Generating Android manifest...',
-      'Linking native resources...',
-      'Signing APK with development certificate...',
-      '[ERROR] Failed to find debug.keystore at ~/.android/debug.keystore',
-      'Retrying with fallback credentials...',
-      'Build successful. Artifact located at build/app/outputs/flutter-apk/app-debug.apk',
-    ];
-
-    int index = 0;
-    _simulationTimer = Timer.periodic(const Duration(milliseconds: 800), (timer) {
-      if (index >= mockMessages.length) {
-        timer.cancel();
-        return;
-      }
-
-      final msg = mockMessages[index];
-      BuildLogLevel level = BuildLogLevel.info;
-      if (msg.contains('[ERROR]')) level = BuildLogLevel.error;
-      if (msg.contains('[WARNING]')) level = BuildLogLevel.warning;
-
-      final newLog = BuildLogEntry(
-        timestamp: DateTime.now(),
-        message: msg,
-        level: level,
-      );
-
-      setState(() {
-        _allLogs.add(newLog);
-        _onSearchChanged(); // Refresh filtered view
-      });
-
-      if (_autoScroll) {
-        _scrollToBottom();
-      }
-      index++;
-    });
+    setState(() {});
   }
 
   void _scrollToBottom() {
@@ -114,13 +52,31 @@ class _BuildLogScreenState extends State<BuildLogScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final viewModel = context.watch<WorkspaceViewModel>();
+    final activeBuild = viewModel.project.builds.firstWhere(
+      (b) => b.id == widget.build.id,
+      orElse: () => widget.build,
+    );
+
+    final allLogs = activeBuild.logs;
+    final searchQuery = _searchController.text.toLowerCase().trim();
+
+    final filteredLogs = searchQuery.isEmpty
+        ? allLogs
+        : allLogs.where((log) => log.message.toLowerCase().contains(searchQuery)).toList();
+
+    if (_autoScroll && allLogs.length > _previousLogCount) {
+      _previousLogCount = allLogs.length;
+      _scrollToBottom();
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('${widget.build.platform} Build Logs', style: const TextStyle(fontSize: 16)),
-            Text('ID: ${widget.build.id}', style: Theme.of(context).textTheme.labelSmall),
+            Text('${activeBuild.platform} Build Logs', style: const TextStyle(fontSize: 16)),
+            Text('ID: ${activeBuild.id}', style: Theme.of(context).textTheme.labelSmall),
           ],
         ),
         actions: [
@@ -152,14 +108,21 @@ class _BuildLogScreenState extends State<BuildLogScreen> {
       ),
       body: Container(
         color: const Color(0xFF1E1E1E), // Terminal black
-        child: ListView.builder(
-          controller: _scrollController,
-          padding: const EdgeInsets.symmetric(vertical: 8),
-          itemCount: _filteredLogs.length,
-          itemBuilder: (context, index) {
-            return _LogLine(entry: _filteredLogs[index]);
-          },
-        ),
+        child: filteredLogs.isEmpty
+            ? const Center(
+                child: Text(
+                  'No log output available.',
+                  style: TextStyle(color: Colors.grey),
+                ),
+              )
+            : ListView.builder(
+                controller: _scrollController,
+                padding: const EdgeInsets.symmetric(vertical: 8),
+                itemCount: filteredLogs.length,
+                itemBuilder: (context, index) {
+                  return _LogLine(entry: filteredLogs[index]);
+                },
+              ),
       ),
     );
   }
@@ -172,7 +135,7 @@ class _LogLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final timeStr = DateFormat('HH:mm:ss').format(entry.timestamp);
-    
+
     Color textColor;
     switch (entry.level) {
       case BuildLogLevel.error:
