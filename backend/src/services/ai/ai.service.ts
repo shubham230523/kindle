@@ -15,7 +15,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 export class AiService {
   private providers: Map<string, AiProvider> = new Map();
-  private defaultProvider: string = 'openrouter';
+  private defaultProvider: string = env.DEFAULT_AI_PROVIDER || 'gemini';
   private cacheDir: string;
 
   constructor() {
@@ -53,7 +53,7 @@ export class AiService {
       } else if (isSimulation) {
         name = 'simulation';
       } else {
-        name = this.defaultProvider;
+        name = env.DEFAULT_AI_PROVIDER || this.defaultProvider || 'openrouter';
       }
     }
 
