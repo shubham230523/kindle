@@ -4,6 +4,7 @@ import '../../project/models/project.dart';
 import '../../project/models/artifact.dart';
 import '../../../shared/widgets/kindle_card.dart';
 import '../../../shared/widgets/section_title.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/responsive_layout.dart';
 
@@ -14,85 +15,37 @@ class ProjectArtifactsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final artifacts = project.artifacts.isNotEmpty ? project.artifacts : _generateMockArtifacts();
+    final artifacts = project.artifacts;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Project Artifacts'),
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: kMaxContentWidth),
-          child: ListView.builder(
-            padding: const EdgeInsets.all(AppConstants.spacingMd),
-            itemCount: artifacts.length + 1,
-            itemBuilder: (context, index) {
-              if (index == 0) {
-                return const SectionTitle(
-                  title: 'Generated Artifacts',
-                  subtitle: 'Central repository for all project deliverables.',
-                );
-              }
-              return _ArtifactCard(artifact: artifacts[index - 1]);
-            },
-          ),
-        ),
-      ),
+      body: artifacts.isEmpty
+          ? const KindleEmptyState(
+              title: 'No Project Artifacts',
+              message: 'Central repository for generated deliverables will appear here as artifacts are created.',
+              icon: Icons.inventory_2_outlined,
+            )
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: kMaxContentWidth),
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(AppConstants.spacingMd),
+                  itemCount: artifacts.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return const SectionTitle(
+                        title: 'Generated Artifacts',
+                        subtitle: 'Central repository for all project deliverables.',
+                      );
+                    }
+                    return _ArtifactCard(artifact: artifacts[index - 1]);
+                  },
+                ),
+              ),
+            ),
     );
-  }
-
-  List<ProjectArtifact> _generateMockArtifacts() {
-    final now = DateTime.now();
-    return [
-      ProjectArtifact(
-        id: 'art1',
-        name: 'Source Code (Stable)',
-        type: ArtifactType.sourceCode,
-        generatedAt: now.subtract(const Duration(minutes: 45)),
-        status: ArtifactStatus.current,
-        size: '1.2 MB',
-      ),
-      ProjectArtifact(
-        id: 'art2',
-        name: 'Technical Architecture Document',
-        type: ArtifactType.architecture,
-        generatedAt: now.subtract(const Duration(hours: 2)),
-        status: ArtifactStatus.current,
-        size: '450 KB',
-      ),
-      ProjectArtifact(
-        id: 'art3',
-        name: 'Requirements Specification',
-        type: ArtifactType.documentation,
-        generatedAt: now.subtract(const Duration(hours: 5)),
-        status: ArtifactStatus.outdated,
-        size: '280 KB',
-      ),
-      ProjectArtifact(
-        id: 'art4',
-        name: 'Development Roadmap v1',
-        type: ArtifactType.plan,
-        generatedAt: now.subtract(const Duration(days: 1)),
-        status: ArtifactStatus.current,
-        size: '150 KB',
-      ),
-      ProjectArtifact(
-        id: 'art5',
-        name: 'Widget Test Report',
-        type: ArtifactType.testReport,
-        generatedAt: now.subtract(const Duration(minutes: 10)),
-        status: ArtifactStatus.current,
-        size: '1.5 MB',
-      ),
-      ProjectArtifact(
-        id: 'art6',
-        name: 'Android Preview Build',
-        type: ArtifactType.build,
-        generatedAt: now.subtract(const Duration(hours: 1)),
-        status: ArtifactStatus.failed,
-        size: '0 KB',
-      ),
-    ];
   }
 }
 
@@ -114,7 +67,7 @@ class _ArtifactCard extends StatelessWidget {
           subtitle: Text('$dateStr • ${artifact.size}'),
           trailing: _ArtifactStatusBadge(status: artifact.status),
           onTap: () {
-            // Placeholder for download action
+            // Download action
           },
         ),
       ),

@@ -14,6 +14,7 @@ import '../../project/models/module.dart';
 
 import '../models/file_node.dart';
 import '../../project/models/coding_result.dart';
+import '../../../core/utils/dev_logger.dart';
 
 class WorkspaceViewModel extends ChangeNotifier {
   final AgentExecutionService _executionService;
@@ -114,57 +115,58 @@ class WorkspaceViewModel extends ChangeNotifier {
   }
 
   void startDevelopment() async {
-    debugPrint('WorkspaceViewModel: startDevelopment called');
+    await DevLogger.startNewSession();
+    DevLogger.log('WorkspaceViewModel: startDevelopment called');
     if (_isDeveloping) {
-      debugPrint('WorkspaceViewModel: Already developing, ignoring');
+      DevLogger.log('WorkspaceViewModel: Already developing, ignoring');
       return;
     }
     
     if (_project.developmentPlan == null || _project.developmentPlan!.phases.isEmpty) {
-      debugPrint('WorkspaceViewModel: Development plan is empty, generating default');
+      DevLogger.log('WorkspaceViewModel: Development plan is empty, generating default');
       _generateDefaultPlan();
     } else {
-      debugPrint('WorkspaceViewModel: Using existing plan with ${_project.developmentPlan!.phases.length} phases');
+      DevLogger.log('WorkspaceViewModel: Using existing plan with ${_project.developmentPlan!.phases.length} phases');
     }
 
     if (_isLocalAiMode && !_isModelReady) {
-      debugPrint('WorkspaceViewModel: 🛡️ LOCAL AI GATING ACTIVE. Checking model...');
+      DevLogger.log('WorkspaceViewModel: 🛡️ LOCAL AI GATING ACTIVE. Checking model...');
       final actuallyReady = await _downloaderService.isModelDownloaded();
       if (!actuallyReady) {
-        debugPrint('WorkspaceViewModel: Model not ready. Initiating/Resuming download.');
+        DevLogger.log('WorkspaceViewModel: Model not ready. Initiating/Resuming download.');
         downloadModel();
         return;
       } else {
-        debugPrint('WorkspaceViewModel: Model verified on disk. Proceeding.');
+        DevLogger.log('WorkspaceViewModel: Model verified on disk. Proceeding.');
         _isModelReady = true;
       }
     }
 
     _isDeveloping = true;
     _project = _project.copyWith(status: ProjectStatus.inProgress);
-    debugPrint('WorkspaceViewModel: Notifying listeners (Development Started)');
+    DevLogger.log('WorkspaceViewModel: Notifying listeners (Development Started)');
     notifyListeners();
 
     try {
       while (_isDeveloping) {
-        debugPrint('WorkspaceViewModel: Looking for next task...');
+        DevLogger.log('WorkspaceViewModel: Looking for next task...');
         final nextTask = _getNextPendingTask();
         
         if (nextTask == null) {
-          debugPrint('WorkspaceViewModel: No more pending tasks. Development complete.');
+          DevLogger.log('WorkspaceViewModel: No more pending tasks. Development complete.');
           _isDeveloping = false;
           _project = _project.copyWith(status: ProjectStatus.completed);
           break;
         }
 
-        debugPrint('WorkspaceViewModel: Next task identified: ${nextTask.title} (${nextTask.id})');
+        DevLogger.log('WorkspaceViewModel: Next task identified: ${nextTask.title} (${nextTask.id})');
         final agent = _assignAgentForTask(nextTask);
         final role = _assignRoleForTask(nextTask);
         final taskWithRole = nextTask.copyWith(role: role);
         
-        debugPrint('WorkspaceViewModel: Assigned agent ${agent.name} (${agent.type}) with role: $role');
+        DevLogger.log('WorkspaceViewModel: Assigned agent ${agent.name} (${agent.type}) with role: $role');
         
-        debugPrint('WorkspaceViewModel: Starting stream for task ${nextTask.id}...');
+        DevLogger.log('WorkspaceViewModel: Starting stream for task ${nextTask.id}...');
         final existingFilePaths = _getAllFilePaths(_virtualFileSystem, '');
         
         await for (final execution in _executionService.executeTask(
@@ -175,37 +177,37 @@ class WorkspaceViewModel extends ChangeNotifier {
           isLocalMode: _isLocalAiMode,
         )) {
           if (!_isDeveloping) {
-            debugPrint('WorkspaceViewModel: Development stopped by user mid-task');
+            DevLogger.log('WorkspaceViewModel: Development stopped by user mid-task');
             break;
           }
-          debugPrint('WorkspaceViewModel: Execution Update: ${execution.status}');
+          DevLogger.log('WorkspaceViewModel: Execution Update: ${execution.status}');
           _activeExecution = execution;
           notifyListeners();
         }
 
-        debugPrint('WorkspaceViewModel: Stream finished for task ${nextTask.id}');
+        DevLogger.log('WorkspaceViewModel: Stream finished for task ${nextTask.id}');
         if (_activeExecution?.status == ExecutionStatus.completed) {
-          debugPrint('WorkspaceViewModel: Marking task ${nextTask.id} as DONE');
+          DevLogger.log('WorkspaceViewModel: Marking task ${nextTask.id} as DONE');
           _markTaskAsDone(nextTask.id);
           
           if (_activeExecution?.result is CodingResult) {
-            debugPrint('WorkspaceViewModel: Applying real file generation for task ${nextTask.id}');
+            DevLogger.log('WorkspaceViewModel: Applying real file generation for task ${nextTask.id}');
             _applyCodingResult(_activeExecution!.result as CodingResult);
           } else {
-            debugPrint('WorkspaceViewModel: No coding result found, falling back to simulation');
+            DevLogger.log('WorkspaceViewModel: No coding result found, falling back to simulation');
             _simulateFileGeneration(nextTask);
           }
         } else {
-          debugPrint('WorkspaceViewModel: Task ${nextTask.id} did not reach completed status. Stopping loop.');
+          DevLogger.log('WorkspaceViewModel: Task ${nextTask.id} did not reach completed status. Stopping loop.');
           _isDeveloping = false; 
         }
       }
     } catch (e, stackTrace) {
-      debugPrint('WorkspaceViewModel: CRITICAL ERROR during development loop: $e');
-      debugPrint('WorkspaceViewModel: StackTrace: $stackTrace');
+      DevLogger.log('WorkspaceViewModel: CRITICAL ERROR during development loop: $e');
+      DevLogger.log('WorkspaceViewModel: StackTrace: $stackTrace');
       _isDeveloping = false;
     } finally {
-      debugPrint('WorkspaceViewModel: Development loop exited. Cleaning up...');
+      DevLogger.log('WorkspaceViewModel: Development loop exited. Cleaning up...');
       _isDeveloping = false;
       _activeExecution = null;
       notifyListeners();
@@ -226,9 +228,9 @@ class WorkspaceViewModel extends ChangeNotifier {
   }
 
   void _applyCodingResult(CodingResult result) {
-    debugPrint('WorkspaceViewModel: Applying ${result.changes.length} file changes');
+    DevLogger.log('WorkspaceViewModel: Applying ${result.changes.length} file changes');
     for (final change in result.changes) {
-      debugPrint('WorkspaceViewModel: Processing [${change.type}] ${change.path}');
+      DevLogger.log('WorkspaceViewModel: Processing [${change.type}] ${change.path}');
       if (change.type == 'delete') {
         _removeFileFromSystem(change.path);
       } else {
@@ -239,7 +241,7 @@ class WorkspaceViewModel extends ChangeNotifier {
   }
 
   void _addOrUpdateFileInSystem(String path, String content) {
-    debugPrint('WorkspaceViewModel: VFS Update - Path: $path');
+    DevLogger.log('WorkspaceViewModel: VFS Update - Path: $path');
     final parts = path.split('/');
     List<FileNode> currentLevel = _virtualFileSystem;
     
@@ -251,7 +253,7 @@ class WorkspaceViewModel extends ChangeNotifier {
       
       if (isLast) {
         if (existingIndex != -1) {
-          debugPrint('WorkspaceViewModel: Updating existing file: $part');
+          DevLogger.log('WorkspaceViewModel: Updating existing file: $part');
           final oldNode = currentLevel[existingIndex];
           currentLevel[existingIndex] = FileNode(
             name: part,
@@ -260,18 +262,18 @@ class WorkspaceViewModel extends ChangeNotifier {
             isExpanded: oldNode.isExpanded,
           );
         } else {
-          debugPrint('WorkspaceViewModel: Creating new file: $part');
+          DevLogger.log('WorkspaceViewModel: Creating new file: $part');
           currentLevel.add(FileNode(name: part, content: content));
         }
       } else {
         if (existingIndex != -1) {
           if (!currentLevel[existingIndex].isFolder) {
-            debugPrint('WorkspaceViewModel: Error - $part exists but is not a folder');
+            DevLogger.log('WorkspaceViewModel: Error - $part exists but is not a folder');
             return;
           }
           currentLevel = currentLevel[existingIndex].children!;
         } else {
-          debugPrint('WorkspaceViewModel: Creating new folder: $part');
+          DevLogger.log('WorkspaceViewModel: Creating new folder: $part');
           final newFolder = FileNode(name: part, isFolder: true, children: [], isExpanded: true);
           currentLevel.add(newFolder);
           currentLevel = newFolder.children!;
@@ -460,17 +462,17 @@ class WorkspaceViewModel extends ChangeNotifier {
   }
 
   void _markTaskAsDone(String taskId) {
-    debugPrint('WorkspaceViewModel: _markTaskAsDone called for task $taskId');
+    DevLogger.log('WorkspaceViewModel: _markTaskAsDone called for task $taskId');
     final plan = _project.developmentPlan;
     if (plan == null) {
-      debugPrint('WorkspaceViewModel: Error - plan is null in _markTaskAsDone');
+      DevLogger.log('WorkspaceViewModel: Error - plan is null in _markTaskAsDone');
       return;
     }
 
     final updatedPhases = plan.phases.map((phase) {
       final updatedTasks = phase.tasks.map((task) {
         if (task.id == taskId) {
-          debugPrint('WorkspaceViewModel: Setting task $taskId status to DONE');
+          DevLogger.log('WorkspaceViewModel: Setting task $taskId status to DONE');
           return task.copyWith(status: TaskStatus.done);
         }
         return task;
@@ -480,7 +482,7 @@ class WorkspaceViewModel extends ChangeNotifier {
 
     final updatedPlan = plan.copyWith(phases: updatedPhases);
     _project = _project.copyWith(developmentPlan: updatedPlan);
-    debugPrint('WorkspaceViewModel: Project updated. Notifying listeners.');
+    DevLogger.log('WorkspaceViewModel: Project updated. Notifying listeners.');
     notifyListeners();
   }
 }

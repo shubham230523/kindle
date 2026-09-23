@@ -4,6 +4,7 @@ import '../../project/models/project.dart';
 import '../../project/models/fix_record.dart';
 import '../../../shared/widgets/kindle_card.dart';
 import '../../../shared/widgets/section_title.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/responsive_layout.dart';
@@ -15,57 +16,37 @@ class FixHistoryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final history = project.fixHistory.isNotEmpty ? project.fixHistory : _generateMockHistory();
+    final history = project.fixHistory;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Fix History'),
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: kMaxContentWidth),
-          child: ListView.builder(
-            padding: const EdgeInsets.all(AppConstants.spacingMd),
-            itemCount: history.length + 1,
-            itemBuilder: (context, index) {
-              if (index == 0) {
-                return const SectionTitle(
-                  title: 'Autonomous Fix History',
-                  subtitle: 'Audit trail of AI-generated surgical fixes and validations.',
-                );
-              }
-              return _FixRecordCard(record: history[index - 1]);
-            },
-          ),
-        ),
-      ),
+      body: history.isEmpty
+          ? const KindleEmptyState(
+              title: 'No Fix History',
+              message: 'Audit trail of AI-generated surgical fixes will appear here once fixes are performed.',
+              icon: Icons.auto_fix_high_outlined,
+            )
+          : Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: kMaxContentWidth),
+                child: ListView.builder(
+                  padding: const EdgeInsets.all(AppConstants.spacingMd),
+                  itemCount: history.length + 1,
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      return const SectionTitle(
+                        title: 'Autonomous Fix History',
+                        subtitle: 'Audit trail of AI-generated surgical fixes and validations.',
+                      );
+                    }
+                    return _FixRecordCard(record: history[index - 1]);
+                  },
+                ),
+              ),
+            ),
     );
-  }
-
-  List<FixRecord> _generateMockHistory() {
-    final now = DateTime.now();
-    return [
-      FixRecord(
-        id: 'f1',
-        issue: 'Login button interaction failure',
-        rootCause: 'isLoading state not reset after error.',
-        modifiedFiles: ['lib/features/auth/viewmodels/auth_viewmodel.dart'],
-        fixSummary: 'Added finally block to reset isLoading state.',
-        buildResult: 'SUCCESS',
-        testResult: 'PASSED',
-        timestamp: now.subtract(const Duration(hours: 1)),
-      ),
-      FixRecord(
-        id: 'f2',
-        issue: 'Overflow on mobile discovery screen',
-        rootCause: 'Hardcoded padding in DiscoveryChatScreen.',
-        modifiedFiles: ['lib/features/discovery/screens/discovery_chat_screen.dart'],
-        fixSummary: 'Replaced fixed padding with AppConstants.spacingMd.',
-        buildResult: 'SUCCESS',
-        testResult: 'N/A (Visual Fix)',
-        timestamp: now.subtract(const Duration(hours: 4)),
-      ),
-    ];
   }
 }
 

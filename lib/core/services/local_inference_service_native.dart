@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:ffi';
 import 'package:flutter/foundation.dart';
 import 'package:llama_cpp_dart/llama_cpp_dart.dart';
+import '../utils/dev_logger.dart';
 
 class LocalInferenceService {
   bool _isInitialized = false;
@@ -21,13 +22,13 @@ class LocalInferenceService {
         // Load in correct order: ggml then llama
         DynamicLibrary.open('$exeDir\\ggml.dll');
         DynamicLibrary.open('$exeDir\\llama.dll');
-        debugPrint('LocalInferenceService: ✅ DLLs pre-loaded into process');
+        DevLogger.log('LocalInferenceService: ✅ DLLs pre-loaded into process');
       } catch (e) {
-        debugPrint('LocalInferenceService: ⚠️ DLL pre-load warning: $e');
+        DevLogger.log('LocalInferenceService: ⚠️ DLL pre-load warning: $e');
       }
     }
 
-    debugPrint('LocalInferenceService: Initializing with model at $normalizedPath');
+    DevLogger.log('LocalInferenceService: Initializing with model at $normalizedPath');
     try {
       // Use spawnFromProcess which looks at the already-loaded libraries in the process memory
       _engine = await LlamaEngine.spawnFromProcess(
@@ -41,9 +42,9 @@ class LocalInferenceService {
       );
       
       _isInitialized = true;
-      debugPrint('LocalInferenceService: ✅ AI Engine Initialized');
+      DevLogger.log('LocalInferenceService: ✅ AI Engine Initialized');
     } catch (e) {
-      debugPrint('LocalInferenceService: ❌ Initialization Error: $e');
+      DevLogger.log('LocalInferenceService: ❌ Initialization Error: $e');
       rethrow;
     }
   }
@@ -54,7 +55,7 @@ class LocalInferenceService {
   }) async* {
     if (!_isInitialized || _engine == null) throw Exception('Local AI Engine not initialized');
 
-    debugPrint('LocalInferenceService: 🧠 STARTING ON-DEVICE INFERENCE');
+    DevLogger.log('LocalInferenceService: 🧠 STARTING ON-DEVICE INFERENCE');
 
     try {
       final chat = await _engine!.createChat();
@@ -64,15 +65,16 @@ class LocalInferenceService {
       await for (final event in chat.generate(maxTokens: 8192)) {
         if (event is TokenEvent) {
           if (event.text.isNotEmpty) {
+            DevLogger.logChunk(event.text);
             yield event.text;
           }
         } else if (event is DoneEvent) {
-          debugPrint('LocalInferenceService: ✅ Generation complete');
+          DevLogger.log('LocalInferenceService: ✅ Generation complete');
           break;
         }
       }
     } catch (e) {
-      debugPrint('LocalInferenceService: ❌ Error during generation: $e');
+      DevLogger.log('LocalInferenceService: ❌ Error during generation: $e');
       rethrow;
     }
   }

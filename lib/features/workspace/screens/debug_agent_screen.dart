@@ -1,7 +1,7 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import '../../../shared/widgets/kindle_card.dart';
 import '../../../shared/widgets/kindle_button.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/responsive_layout.dart';
@@ -21,46 +21,22 @@ class _DebugAgentScreenState extends State<DebugAgentScreen> {
 
   final List<Map<String, dynamic>> _steps = [
     {
-      'title': 'Issue Detected',
-      'icon': Icons.bug_report_outlined,
-      'description': 'Automated test suite reported a failure in LoginScreen widget tests.',
-      'details': 'Error: Expected: clickable, Actual: disabled\nLocation: login_screen_test.dart:42',
-    },
-    {
-      'title': 'Analysis',
+      'title': 'Scanning Workspace',
       'icon': Icons.search,
-      'description': 'Scanning related source files and build configurations...',
-      'details': 'Analyzed: lib/features/auth/screens/login_screen.dart\nAnalyzed: lib/features/auth/viewmodels/auth_viewmodel.dart',
+      'description': 'Analyzing project files for issues or syntax warnings...',
+      'details': 'Scanning virtual file system...',
     },
     {
-      'title': 'Root Cause Hypothesis',
+      'title': 'Diagnostics',
       'icon': Icons.psychology_outlined,
-      'description': 'The login button remains disabled because the "isLoading" state in AuthViewModel is never reset after a failed attempt.',
-      'details': 'Hypothesis confidence: 94%',
+      'description': 'Evaluating code structure and runtime state.',
+      'details': 'Running internal code analysis...',
     },
     {
-      'title': 'Proposed Fix',
-      'icon': Icons.build_circle_outlined,
-      'description': 'Add a finally block in the login method to ensure isLoading is set to false.',
-      'details': 'File: auth_viewmodel.dart\nLines: +12, -2',
-    },
-    {
-      'title': 'Apply Fix',
-      'icon': Icons.auto_awesome,
-      'description': 'Executing file modifications and staging changes.',
-      'details': 'Modification complete. Git index updated.',
-    },
-    {
-      'title': 'Rebuild',
-      'icon': Icons.sync,
-      'description': 'Triggering a hot-reload build to verify changes.',
-      'details': 'Build successful (Duration: 1.2s)',
-    },
-    {
-      'title': 'Retest',
+      'title': 'Verification',
       'icon': Icons.fact_check_outlined,
-      'description': 'Running affected test cases...',
-      'details': 'Test result: PASSED (1/1)',
+      'description': 'Checking generated files against architectural rules.',
+      'details': 'Status: System check complete.',
     },
   ];
 
@@ -69,11 +45,11 @@ class _DebugAgentScreenState extends State<DebugAgentScreen> {
       _isRunning = true;
       _currentStep = 0;
       _logs.clear();
-      _logs.add('--- Debug Agent Session Started ---');
+      _logs.add('--- Autonomous Debug Session Started ---');
     });
 
     for (var i = 0; i < _steps.length; i++) {
-      await Future.delayed(const Duration(seconds: 2));
+      await Future.delayed(const Duration(seconds: 1));
       if (!mounted || !_isRunning) return;
       
       setState(() {
@@ -86,7 +62,7 @@ class _DebugAgentScreenState extends State<DebugAgentScreen> {
 
     setState(() {
       _isRunning = false;
-      _logs.add('--- Debugging Complete: Issue Resolved ---');
+      _logs.add('--- Debug Check Complete: No critical errors found ---');
     });
   }
 
@@ -138,7 +114,7 @@ class _DebugAgentScreenState extends State<DebugAgentScreen> {
                 ),
                 const SizedBox(height: AppConstants.spacingMd),
                 KindleButton(
-                  text: _isRunning ? 'Debugging in progress...' : 'Initiate Debug Cycle',
+                  text: _isRunning ? 'Debugging in progress...' : 'Initiate Workspace Diagnostics',
                   onPressed: _isRunning ? () {} : _startDebugging,
                   isLoading: _isRunning,
                   icon: Icons.bolt,
@@ -156,7 +132,7 @@ class _DebugAgentScreenState extends State<DebugAgentScreen> {
       child: Row(
         children: [
           const CircleAvatar(
-            backgroundColor: Colors.redAccent,
+            backgroundColor: AppColors.primary,
             child: Icon(Icons.bug_report, color: Colors.white),
           ),
           const SizedBox(width: 16),
@@ -166,7 +142,7 @@ class _DebugAgentScreenState extends State<DebugAgentScreen> {
               children: [
                 const Text('Debug Agent', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
                 Text(
-                  _isRunning ? 'Autonomous fixing active' : 'Waiting for issue...',
+                  _isRunning ? 'Autonomous diagnostics active' : 'Ready for issue investigation',
                   style: const TextStyle(color: AppColors.textSecondary),
                 ),
               ],
@@ -267,23 +243,30 @@ class _DebugAgentScreenState extends State<DebugAgentScreen> {
           const Text('AGENT LOGS', style: TextStyle(color: Colors.grey, fontSize: 10, fontWeight: FontWeight.bold)),
           const Divider(color: Colors.grey),
           Expanded(
-            child: ListView.builder(
-              controller: _scrollController,
-              itemCount: _logs.length,
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 2),
-                  child: Text(
-                    _logs[index],
-                    style: const TextStyle(
-                      color: Colors.greenAccent,
-                      fontFamily: 'monospace',
-                      fontSize: 10,
+            child: _logs.isEmpty
+                ? const Center(
+                    child: Text(
+                      'No active debug logs',
+                      style: TextStyle(color: Colors.grey, fontSize: 11, fontFamily: 'monospace'),
                     ),
+                  )
+                : ListView.builder(
+                    controller: _scrollController,
+                    itemCount: _logs.length,
+                    itemBuilder: (context, index) {
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        child: Text(
+                          _logs[index],
+                          style: const TextStyle(
+                            color: Colors.greenAccent,
+                            fontFamily: 'monospace',
+                            fontSize: 10,
+                          ),
+                        ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           ),
         ],
       ),

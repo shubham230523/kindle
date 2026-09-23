@@ -4,6 +4,7 @@ import '../models/requirement.dart';
 import '../models/feature.dart';
 import '../models/user_story.dart';
 import '../../../shared/widgets/kindle_card.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/responsive_layout.dart';
@@ -94,6 +95,14 @@ class _RequirementsListScreenState extends State<RequirementsListScreen> with Si
         .where((r) => r.title.toLowerCase().contains(_searchQuery) || r.description.toLowerCase().contains(_searchQuery))
         .toList();
 
+    if (filtered.isEmpty) {
+      return KindleEmptyState(
+        title: type == RequirementType.functional ? 'No Functional Requirements' : 'No Non-Functional Requirements',
+        message: 'Requirements defined during discovery will appear here.',
+        icon: Icons.assignment_outlined,
+      );
+    }
+
     return _ResponsiveListView(
       itemCount: filtered.length,
       itemBuilder: (context, index) {
@@ -108,6 +117,14 @@ class _RequirementsListScreenState extends State<RequirementsListScreen> with Si
         .where((f) => f.name.toLowerCase().contains(_searchQuery) || f.description.toLowerCase().contains(_searchQuery))
         .toList();
 
+    if (filtered.isEmpty) {
+      return const KindleEmptyState(
+        title: 'No Features Defined',
+        message: 'Features extracted from project requirements will appear here.',
+        icon: Icons.featured_play_list_outlined,
+      );
+    }
+
     return _ResponsiveListView(
       itemCount: filtered.length,
       itemBuilder: (context, index) {
@@ -121,6 +138,14 @@ class _RequirementsListScreenState extends State<RequirementsListScreen> with Si
     final filtered = widget.project.userStories
         .where((us) => us.fullText.toLowerCase().contains(_searchQuery))
         .toList();
+
+    if (filtered.isEmpty) {
+      return const KindleEmptyState(
+        title: 'No User Stories Defined',
+        message: 'User stories mapped from project features will appear here.',
+        icon: Icons.record_voice_over_outlined,
+      );
+    }
 
     return _ResponsiveListView(
       itemCount: filtered.length,

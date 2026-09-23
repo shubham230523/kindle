@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_theme.dart';
-import '../features/splash/screens/splash_screen.dart';
+import '../core/constants/mock_project.dart';
+import '../features/workspace/screens/project_workspace_shell.dart';
 
 class KindleApp extends StatelessWidget {
   const KindleApp({super.key});
@@ -11,7 +12,7 @@ class KindleApp extends StatelessWidget {
       title: 'Kindle',
       theme: AppTheme.lightTheme,
       debugShowCheckedModeBanner: false,
-      home: const SplashScreen(),
+      home: ProjectWorkspaceShell(project: MockProject.syncTasks),
     );
   }
 }

@@ -8,6 +8,7 @@ import 'widgets/architecture_diagram.dart';
 import '../../../shared/widgets/kindle_card.dart';
 import '../../../shared/widgets/section_title.dart';
 import '../../../shared/widgets/kindle_button.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/responsive_layout.dart';
@@ -17,97 +18,23 @@ class ArchitectureOverviewScreen extends StatelessWidget {
 
   const ArchitectureOverviewScreen({super.key, required this.project});
 
-  Architecture _generateMockArchitecture() {
-    final tech = project.selectedTechnology?.toLowerCase() ?? 'flutter';
-    
-    if (tech.contains('flutter')) {
-      return const Architecture(
-        pattern: ArchitecturePattern.clean,
-        layers: ['Presentation', 'Domain', 'Data', 'Core'],
-        modules: [
-          Module(name: 'Auth', responsibility: 'Handles user session and credentials', dependencies: ['Core']),
-          Module(name: 'Chat', responsibility: 'Real-time messaging logic', dependencies: ['Domain', 'Core']),
-          Module(name: 'Workspace', responsibility: 'Project management and roadmap', dependencies: ['Domain', 'Data']),
-        ],
-        technologyDependencies: [
-          TechnologyDependency(
-            name: 'flutter_bloc',
-            purpose: 'State management',
-            category: 'UI Logic',
-            whySelected: 'Predictable state management with easy testing and separation of concerns.',
-          ),
-          TechnologyDependency(
-            name: 'dio',
-            purpose: 'Networking',
-            category: 'Data',
-            whySelected: 'Powerful HTTP client with interceptors and robust error handling.',
-          ),
-          TechnologyDependency(
-            name: 'get_it',
-            purpose: 'Service Locator',
-            category: 'Core',
-            whySelected: 'Fast and simple dependency injection for decoupling components.',
-          ),
-        ],
-      );
-    } else if (tech.contains('web')) {
-      return const Architecture(
-        pattern: ArchitecturePattern.layered,
-        layers: ['Frontend (React)', 'API Layer', 'Business Logic', 'Database'],
-        modules: [
-          Module(name: 'Dashboard', responsibility: 'Visualizing project status'),
-          Module(name: 'User Management', responsibility: 'RBAC and Profiles'),
-        ],
-        technologyDependencies: [
-          TechnologyDependency(
-            name: 'next.js',
-            purpose: 'Full-stack framework',
-            category: 'Frontend/Core',
-            whySelected: 'Optimized rendering strategies and built-in API routes.',
-          ),
-          TechnologyDependency(
-            name: 'prisma',
-            purpose: 'ORM',
-            category: 'Data',
-            whySelected: 'Type-safe database client for efficient data modeling and access.',
-          ),
-          TechnologyDependency(
-            name: 'tailwind_css',
-            purpose: 'Styling',
-            category: 'UI',
-            whySelected: 'Utility-first approach for rapid and consistent design implementation.',
-          ),
-        ],
-      );
-    } else {
-      return const Architecture(
-        pattern: ArchitecturePattern.mvvm,
-        layers: ['View', 'ViewModel', 'Model', 'Repository'],
-        modules: [
-          Module(name: 'Core', responsibility: 'Base classes and utils'),
-          Module(name: 'Feature A', responsibility: 'Primary business value'),
-        ],
-        technologyDependencies: [
-          TechnologyDependency(
-            name: 'retrofit',
-            purpose: 'REST Client',
-            category: 'Networking',
-            whySelected: 'Declarative API definition and seamless serialization.',
-          ),
-          TechnologyDependency(
-            name: 'dagger_hilt',
-            purpose: 'Dependency Injection',
-            category: 'Core',
-            whySelected: 'Standardized DI framework for high-scale Android applications.',
-          ),
-        ],
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final architecture = _generateMockArchitecture();
+    final architecture = project.architecture;
+
+    if (architecture == null) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Architecture Blueprint'),
+        ),
+        body: const KindleEmptyState(
+          title: 'No Architecture Defined',
+          message: 'Architecture blueprint and system layers will appear here when defined.',
+          icon: Icons.account_tree_outlined,
+        ),
+      );
+    }
+
     final bool isDesktop = ResponsiveLayout.isDesktop(context);
 
     return Scaffold(
@@ -127,15 +54,21 @@ class ArchitectureOverviewScreen extends StatelessWidget {
                   const SizedBox(height: AppConstants.spacingLg),
                   const SectionTitle(title: 'Visual Blueprint'),
                   const ArchitectureDiagram(),
-                  const SizedBox(height: AppConstants.spacingLg),
-                  const SectionTitle(title: 'Structural Layers'),
-                  _LayersList(layers: architecture.layers),
-                  const SizedBox(height: AppConstants.spacingLg),
-                  const SectionTitle(title: 'Module Breakdown'),
-                  _ModulesGrid(modules: architecture.modules, isDesktop: isDesktop),
-                  const SizedBox(height: AppConstants.spacingLg),
-                  const SectionTitle(title: 'Dependency Overview'),
-                  _DependenciesCard(dependencies: architecture.technologyDependencies),
+                  if (architecture.layers.isNotEmpty) ...[
+                    const SizedBox(height: AppConstants.spacingLg),
+                    const SectionTitle(title: 'Structural Layers'),
+                    _LayersList(layers: architecture.layers),
+                  ],
+                  if (architecture.modules.isNotEmpty) ...[
+                    const SizedBox(height: AppConstants.spacingLg),
+                    const SectionTitle(title: 'Module Breakdown'),
+                    _ModulesGrid(modules: architecture.modules, isDesktop: isDesktop),
+                  ],
+                  if (architecture.technologyDependencies.isNotEmpty) ...[
+                    const SizedBox(height: AppConstants.spacingLg),
+                    const SectionTitle(title: 'Dependency Overview'),
+                    _DependenciesCard(dependencies: architecture.technologyDependencies),
+                  ],
                   const SizedBox(height: AppConstants.spacingLg),
                   const SectionTitle(title: 'Data Flow Summary'),
                   KindleCard(
@@ -317,16 +250,18 @@ class _DependenciesCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 8),
-              Text(
-                'Selection Strategy:',
-                style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                dep.whySelected,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
-              ),
+              if (dep.whySelected.isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Text(
+                  'Selection Strategy:',
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  dep.whySelected,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(fontStyle: FontStyle.italic),
+                ),
+              ],
             ],
           ),
         ),

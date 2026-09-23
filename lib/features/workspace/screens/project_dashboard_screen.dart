@@ -73,8 +73,6 @@ class ProjectDashboardScreen extends StatelessWidget {
                       _TechnicalStackSection(project: project),
                       const SizedBox(height: AppConstants.spacingLg),
                       _QuickActionsSection(),
-                      const SizedBox(height: AppConstants.spacingLg),
-                      _RecentActivitySection(),
                       const SizedBox(height: AppConstants.spacingXl),
                     ],
                   ),
@@ -370,72 +368,6 @@ class _ActionChip extends StatelessWidget {
   }
 }
 
-class _RecentActivitySection extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const SectionTitle(title: 'Recent Activity'),
-        KindleCard(
-          padding: EdgeInsets.zero,
-          child: Column(
-            children: [
-              _ActivityItem(
-                icon: Icons.auto_awesome,
-                title: 'Architecture Sparked',
-                time: '2 hours ago',
-                isLast: false,
-              ),
-              _ActivityItem(
-                icon: Icons.assignment_turned_in,
-                title: 'Requirements Formalized',
-                time: '5 hours ago',
-                isLast: false,
-              ),
-              _ActivityItem(
-                icon: Icons.chat_bubble_outline,
-                title: 'Discovery Conversation Complete',
-                time: 'Yesterday',
-                isLast: true,
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ActivityItem extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String time;
-  final bool isLast;
-
-  const _ActivityItem({
-    required this.icon,
-    required this.title,
-    required this.time,
-    this.isLast = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        ListTile(
-          leading: Icon(icon, color: AppColors.primary, size: 20),
-          title: Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500)),
-          subtitle: Text(time, style: Theme.of(context).textTheme.labelSmall?.copyWith(color: AppColors.textSecondary)),
-          dense: true,
-        ),
-        if (!isLast) const Divider(height: 1, indent: 56),
-      ],
-    );
-  }
-}
-
 class _LocalAiModeToggle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -479,7 +411,7 @@ class _LocalAiModeToggle extends StatelessWidget {
           Switch(
             value: viewModel.isLocalAiMode,
             onChanged: kIsWeb ? null : (value) => viewModel.toggleLocalAiMode(),
-            activeColor: Colors.blue,
+            activeThumbColor: Colors.blue,
           ),
         ],
       ),

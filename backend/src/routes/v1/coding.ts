@@ -45,13 +45,30 @@ export default async function codingRoutes(fastify: FastifyInstance) {
       const isLocal = codingRequest.isLocalMode === true;
       const providerName = isLocal ? 'local' : undefined;
 
+      console.log(`\n================================================================================`);
+      console.log(`🚀 [START DEVELOPMENT TASK TRIGGERED] "${codingRequest.task.title}"`);
+      console.log(`================================================================================`);
+      console.log(`  📌 Project ID:     ${codingRequest.projectId}`);
+      console.log(`  📋 Task ID:        ${codingRequest.task.id}`);
+      console.log(`  👤 Role:           ${codingRequest.task.role || 'General'}`);
+      console.log(`  🤖 Mode:           ${isLocal ? 'Client-Side Delegation (Local LLM)' : 'Backend Model Engine'}`);
+      console.log(`  📂 Existing Files: ${codingRequest.existingFiles?.length || 0} file(s)`);
+      console.log(`--------------------------------------------------------------------------------`);
+      console.log(`⚡ [STREAMING MODEL ENGINE OUTPUT START]`);
+      console.log(`--------------------------------------------------------------------------------`);
+
       // Map isLocalMode to delegate flag for the agent
       const requestWithDelegate = {
         ...codingRequest,
         delegate: isLocal
       };
 
+      let chunkCount = 0;
+
       const result = await codingAgent.executeTask(requestWithDelegate, (chunk) => {
+        chunkCount++;
+        process.stdout.write(chunk); // Print live streaming model output in terminal
+
         if (!headersSent) {
           // Set headers for Server-Sent Events (SSE)
           reply.raw.setHeader('Content-Type', 'text/event-stream');
@@ -71,7 +88,24 @@ export default async function codingRoutes(fastify: FastifyInstance) {
           taskId: codingRequest.task.id,
           chunk
         });
-      });
+      }, providerName);
+
+      console.log(`\n--------------------------------------------------------------------------------`);
+      console.log(`✅ [STREAMING MODEL ENGINE OUTPUT END] (${chunkCount} chunks received)`);
+      console.log(`--------------------------------------------------------------------------------`);
+      console.log(`🎉 [TASK EXECUTED] "${codingRequest.task.title}"`);
+
+      if (result.changes && result.changes.length > 0) {
+        console.log(`📁 File Modifications Generated (${result.changes.length}):`);
+        result.changes.forEach(change => {
+          console.log(`  • [${change.type.toUpperCase()}] ${change.path}`);
+        });
+      }
+
+      if (result.explanation) {
+        console.log(`💬 Explanation: ${result.explanation}`);
+      }
+      console.log(`================================================================================\n`);
 
       if (!headersSent) {
         // CRITICAL: Even for instant delegation, we MUST use SSE protocol
@@ -94,6 +128,7 @@ export default async function codingRoutes(fastify: FastifyInstance) {
       reply.raw.end();
 
     } catch (error: any) {
+      console.error(`\n❌ [ERROR EXECUTING TASK] "${codingRequest.task.title}":`, error.message);
       fastify.log.error(error);
       const errorData = JSON.stringify({ type: 'error', message: error.message });
 
@@ -130,6 +165,7 @@ export default async function codingRoutes(fastify: FastifyInstance) {
 
     try {
       await checkOwnership(projectId, userId);
+      console.log(`[CODING_ROUTE] 📝 Applying ${changes.length} file changes for project: ${projectId}`);
       const checkpointId = await codeChangeService.applyChanges(projectId, changes, explanation);
       return {
         message: 'Changes applied successfully',

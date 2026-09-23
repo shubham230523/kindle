@@ -6,6 +6,7 @@ import '../../project/models/test_run.dart';
 import '../../../shared/widgets/kindle_card.dart';
 import '../../../shared/widgets/section_title.dart';
 import '../../../shared/widgets/kindle_button.dart';
+import '../../../shared/widgets/empty_state.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/utils/responsive_layout.dart';
@@ -20,82 +21,23 @@ class TestingDashboardScreen extends StatefulWidget {
 }
 
 class _TestingDashboardScreenState extends State<TestingDashboardScreen> {
-  late List<TestRun> _testRuns;
-
-  @override
-  void initState() {
-    super.initState();
-    _testRuns = _generateMockTestRuns();
-  }
-
-  List<TestRun> _generateMockTestRuns() {
-    final now = DateTime.now();
-    return [
-      TestRun(
-        id: 'tr1',
-        category: TestCategory.unit,
-        status: TestStatus.passed,
-        startedAt: now.subtract(const Duration(hours: 2)),
-        completedAt: now.subtract(const Duration(hours: 1, minutes: 58)),
-        totalCount: 42,
-        passedCount: 42,
-        failedCount: 0,
-        skippedCount: 0,
-        coverage: 0.88,
-        testCases: [
-          TestCase(
-            id: 'tc1',
-            name: 'Theme initialization',
-            suite: 'core/theme_test.dart',
-            status: TestStatus.passed,
-            duration: const Duration(milliseconds: 120),
-            logs: ['Checking light theme...', 'Checking dark theme...', 'Pass.'],
-            relatedFiles: ['lib/core/theme/app_theme.dart'],
-          ),
-        ],
-      ),
-      TestRun(
-        id: 'tr2',
-        category: TestCategory.widget,
-        status: TestStatus.failed,
-        startedAt: now.subtract(const Duration(hours: 1)),
-        completedAt: now.subtract(const Duration(minutes: 55)),
-        totalCount: 15,
-        passedCount: 13,
-        failedCount: 2,
-        skippedCount: 0,
-        coverage: 0.75,
-        testCases: [
-          TestCase(
-            id: 'tc2',
-            name: 'Login button interaction',
-            suite: 'features/auth/login_screen_test.dart',
-            status: TestStatus.failed,
-            duration: const Duration(milliseconds: 450),
-            errorMessage: 'Expected: clickable, Actual: disabled',
-            stackTrace: 'Error at login_screen_test.dart:42\nTest failed after 450ms',
-            logs: ['Pumping LoginScreen...', 'Finding login button...', 'Tapping button...', 'Failed.'],
-            relatedFiles: ['lib/features/auth/screens/login_screen.dart'],
-          ),
-        ],
-      ),
-      TestRun(
-        id: 'tr3',
-        category: TestCategory.integration,
-        status: TestStatus.passed,
-        startedAt: now.subtract(const Duration(minutes: 30)),
-        completedAt: now.subtract(const Duration(minutes: 10)),
-        totalCount: 5,
-        passedCount: 5,
-        failedCount: 0,
-        skippedCount: 0,
-        coverage: 0.92,
-      ),
-    ];
-  }
-
   @override
   Widget build(BuildContext context) {
+    final runs = widget.project.testRuns;
+
+    if (runs.isEmpty) {
+      return Scaffold(
+        appBar: AppBar(
+          title: const Text('Testing & QA'),
+        ),
+        body: const KindleEmptyState(
+          title: 'No Test Runs Executed',
+          message: 'Test execution results and QA reports will appear here when tests are run.',
+          icon: Icons.bug_report_outlined,
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Testing & QA'),
@@ -112,10 +54,10 @@ class _TestingDashboardScreenState extends State<TestingDashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _OverviewSection(runs: _testRuns),
+                  _OverviewSection(runs: runs),
                   const SizedBox(height: AppConstants.spacingLg),
                   const SectionTitle(title: 'Recent Test Execution'),
-                  ..._testRuns.map((run) => _TestRunCard(run: run)),
+                  ...runs.map((run) => _TestRunCard(run: run)),
                   const SizedBox(height: AppConstants.spacingXl),
                 ],
               ),

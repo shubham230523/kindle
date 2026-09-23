@@ -11,6 +11,7 @@ import '../constants/app_constants.dart';
 import 'agent_simulator_service.dart';
 import 'local_inference_service.dart';
 import 'model_downloader_service.dart';
+import '../utils/dev_logger.dart';
 
 class BackendAgentService implements AgentExecutionService {
   final http.Client _client;
@@ -150,7 +151,7 @@ class BackendAgentService implements AgentExecutionService {
         throw Exception(errorMessage);
       }
     } catch (e) {
-      debugPrint('BackendAgentService: Error executing task: $e');
+      DevLogger.log('BackendAgentService: Error executing task: $e');
       yield AgentExecution(
         id: executionId,
         agentId: agent.id,

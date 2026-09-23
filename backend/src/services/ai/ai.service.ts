@@ -72,6 +72,7 @@ export class AiService {
       throw new AiError(`AI Provider "${name}" not found`, 404);
     }
 
+    console.log(`[AI_SERVICE] 🧠 Executing inference using AI Provider: "${name}"`);
     const response = await provider.chat(request, onChunk);
 
     // Save to cache if enabled and successful
