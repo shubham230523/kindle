@@ -213,47 +213,7 @@ class BackendAgentService implements AgentExecutionService {
     }
 
     try {
-      // 1. Extract the JSON block reliably
-      String jsonContent = resultString;
-      final start = resultString.indexOf('{');
-      if (start != -1) {
-        int depth = 0;
-        bool inString = false;
-        bool escaped = false;
-        int end = -1;
-
-        for (int i = start; i < resultString.length; i++) {
-          final char = resultString[i];
-          if (escaped) {
-            escaped = false;
-            continue;
-          }
-          if (char == '\\') {
-            escaped = true;
-            continue;
-          }
-          if (char == '"') {
-            inString = !inString;
-            continue;
-          }
-          if (!inString) {
-            if (char == '{') depth++;
-            else if (char == '}') depth--;
-            
-            if (depth == 0) {
-              end = i;
-              break;
-            }
-          }
-        }
-        if (end != -1) {
-          jsonContent = resultString.substring(start, end + 1);
-        }
-      }
-
-      // 2. Sanitize and Decode
-      final sanitized = _sanitizeJson(jsonContent);
-      final resultMap = jsonDecode(sanitized);
+      final resultMap = _extractAndParseJson(resultString);
       final dynamic finalResult = isCodingTask ? CodingResult.fromMap(resultMap) : resultMap;
       
       yield AgentExecution(
@@ -273,22 +233,87 @@ class BackendAgentService implements AgentExecutionService {
         ],
       );
     } catch (e) {
-      debugPrint('Local AI Decode Error: $e\nRaw content: $resultString');
-      throw Exception('Failed to parse local AI output: $e');
+      DevLogger.log('Local AI Decode Error: $e\nRaw content: $resultString');
+      yield AgentExecution(
+        id: executionId,
+        agentId: agent.id,
+        taskId: task.id,
+        status: ExecutionStatus.failed,
+        startedAt: startedAt,
+        completedAt: DateTime.now(),
+        logs: [
+          ExecutionLog(
+            timestamp: DateTime.now(),
+            message: 'Local execution failed to parse JSON',
+            details: e.toString(),
+            level: 'error',
+          ),
+        ],
+      );
     }
   }
 
-  String _sanitizeJson(String input) {
-    // A. Clean markdown and artifacts
-    input = input.replaceAll('```json', '').replaceAll('```', '').trim();
+  Map<String, dynamic> _extractAndParseJson(String rawOutput) {
+    if (rawOutput.trim().isEmpty) {
+      throw const FormatException('Empty raw output from AI model');
+    }
 
-    // B. State-machine to fix literal newlines in strings without breaking valid JSON
-    StringBuffer buffer = StringBuffer();
+    // 1. Clean markdown code fences and external text
+    String cleaned = rawOutput.replaceAll('```json', '').replaceAll('```', '').trim();
+
+    // 2. Find opening brace '{'
+    final start = cleaned.indexOf('{');
+    if (start == -1) {
+      throw FormatException('No opening brace "{" found in output');
+    }
+
+    cleaned = cleaned.substring(start);
+
+    // 3. String-aware JSON block extraction
+    int depth = 0;
     bool inString = false;
     bool escaped = false;
-    
-    for (int i = 0; i < input.length; i++) {
-      String char = input[i];
+    int end = -1;
+
+    for (int i = 0; i < cleaned.length; i++) {
+      final char = cleaned[i];
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (char == '\\') {
+        escaped = true;
+        continue;
+      }
+      if (char == '"') {
+        inString = !inString;
+        continue;
+      }
+      if (!inString) {
+        if (char == '{') {
+          depth++;
+        } else if (char == '}') {
+          depth--;
+        }
+
+        if (depth == 0) {
+          end = i;
+          break;
+        }
+      }
+    }
+
+    if (end != -1) {
+      cleaned = cleaned.substring(0, end + 1);
+    }
+
+    // 4. Sanitize literal control chars (newlines, tabs, carriage returns inside strings)
+    StringBuffer buffer = StringBuffer();
+    inString = false;
+    escaped = false;
+
+    for (int i = 0; i < cleaned.length; i++) {
+      String char = cleaned[i];
       if (inString) {
         if (escaped) {
           buffer.write(char);
@@ -300,38 +325,77 @@ class BackendAgentService implements AgentExecutionService {
           buffer.write(char);
           inString = false;
         } else if (char == '\n') {
-          buffer.write('\\n'); // Escape literal newline
+          buffer.write('\\n');
         } else if (char == '\r') {
-          buffer.write('\\r'); // Escape literal carriage return
+          buffer.write('\\r');
+        } else if (char == '\t') {
+          buffer.write('\\t');
         } else {
           buffer.write(char);
         }
       } else {
-        if (char == '"') inString = true;
+        if (char == '"') {
+          inString = true;
+        }
         buffer.write(char);
       }
     }
-    input = buffer.toString();
 
-    // C. Handle Dart raw strings (common coder model hallucination)
-    input = input.replaceAllMapped(RegExp(r'r"""([\s\S]*?)"""'), (m) => jsonEncode(m.group(1)!));
-    input = input.replaceAllMapped(RegExp(r'r"([\s\S]*?)"'), (m) => jsonEncode(m.group(1)!));
-    input = input.replaceAllMapped(RegExp(r'"""([\s\S]*?)"""'), (m) => jsonEncode(m.group(1)!));
+    String jsonString = buffer.toString();
 
-    // D. Remove trailing commas
-    input = input.replaceAllMapped(RegExp(r',\s*([\]}])'), (match) => match.group(1)!);
+    // 5. Handle Dart raw strings
+    jsonString = jsonString.replaceAllMapped(RegExp(r'r"""([\s\S]*?)"""'), (m) {
+      return jsonEncode(m.group(1)!);
+    });
+    jsonString = jsonString.replaceAllMapped(RegExp(r'r"([\s\S]*?)"'), (m) {
+      return jsonEncode(m.group(1)!);
+    });
+    jsonString = jsonString.replaceAllMapped(RegExp(r'"""([\s\S]*?)"""'), (m) {
+      return jsonEncode(m.group(1)!);
+    });
 
-    // E. Emergency repair for truncated JSON
-    if (!input.endsWith('}')) {
-      if (input.split('"').length % 2 == 0) input += '"';
-      int openBraces = '{'.allMatches(input).length;
-      int closeBraces = '}'.allMatches(input).length;
-      int openBrackets = '['.allMatches(input).length;
-      int closeBrackets = ']'.allMatches(input).length;
-      for (int i = 0; i < (openBrackets - closeBrackets); i++) input += ']';
-      for (int i = 0; i < (openBraces - closeBraces); i++) input += '}';
+    // 6. Remove trailing commas
+    jsonString = jsonString.replaceAllMapped(RegExp(r',\s*([\]}])'), (m) {
+      return m.group(1)!;
+    });
+
+    // 7. Emergency repair for unclosed JSON
+    if (!jsonString.endsWith('}')) {
+      if (jsonString.split('"').length % 2 == 0) {
+        jsonString += '"';
+      }
+      final openBraces = '{'.allMatches(jsonString).length;
+      final closeBraces = '}'.allMatches(jsonString).length;
+      final openBrackets = '['.allMatches(jsonString).length;
+      final closeBrackets = ']'.allMatches(jsonString).length;
+
+      int curBrackets = closeBrackets;
+      int curBraces = closeBraces;
+      final sb = StringBuffer(jsonString);
+      for (int i = curBrackets; i < openBrackets; i++) {
+        sb.write(']');
+      }
+      for (int i = curBraces; i < openBraces; i++) {
+        sb.write('}');
+      }
+      jsonString = sb.toString();
     }
 
-    return input;
+    try {
+      return jsonDecode(jsonString) as Map<String, dynamic>;
+    } catch (e) {
+      try {
+        final pattern = RegExp(r'("content"\s*:\s*")([\s\S]*?)("\s*,\s*"type")');
+        final recovered = jsonString.replaceAllMapped(pattern, (Match m) {
+          final prefix = m.group(1)!;
+          final codeContent = m.group(2)!.replaceAll('"', '\\"');
+          final suffix = m.group(3)!;
+          return '$prefix$codeContent$suffix';
+        });
+        return jsonDecode(recovered) as Map<String, dynamic>;
+      } catch (_) {
+        throw FormatException('Failed to decode JSON: $e');
+      }
+    }
   }
 }

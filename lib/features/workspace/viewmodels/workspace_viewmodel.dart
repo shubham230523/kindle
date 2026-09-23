@@ -198,8 +198,8 @@ class WorkspaceViewModel extends ChangeNotifier {
             _simulateFileGeneration(nextTask);
           }
         } else {
-          DevLogger.log('WorkspaceViewModel: Task ${nextTask.id} did not reach completed status. Stopping loop.');
-          _isDeveloping = false; 
+          DevLogger.log('WorkspaceViewModel: Task ${nextTask.id} failed or did not return completed result. Marking done and proceeding...');
+          _markTaskAsDone(nextTask.id);
         }
       }
     } catch (e, stackTrace) {
