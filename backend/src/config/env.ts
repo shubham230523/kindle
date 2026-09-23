@@ -8,6 +8,8 @@ export const env = {
   OLLAMA_MODEL: process.env.OLLAMA_MODEL || 'llama2',
   OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || '',
   OPENROUTER_MODEL: process.env.OPENROUTER_MODEL || 'minimax/minimax-m3:free',
+  GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
+  GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-2.5-flash',
   ENABLE_AI_CACHE: process.env.ENABLE_AI_CACHE === 'true',
   LOCAL_MODEL_PATH: process.env.LOCAL_MODEL_PATH || '',
   LOCAL_MODEL_THREADS: parseInt(process.env.LOCAL_MODEL_THREADS || '4', 10),

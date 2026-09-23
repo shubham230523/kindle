@@ -4,6 +4,7 @@ import { OllamaProvider } from './ollama.provider.js';
 import { OpenRouterProvider } from './openrouter.provider.js';
 import { SimulationProvider } from './simulation.provider.js';
 import { LocalLlamaProvider } from './local.provider.js';
+import { GeminiProvider } from './gemini.provider.js';
 import { env } from '../../config/env.js';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -22,6 +23,7 @@ export class AiService {
     this.registerProvider(new OpenRouterProvider());
     this.registerProvider(new SimulationProvider());
     this.registerProvider(new LocalLlamaProvider());
+    this.registerProvider(new GeminiProvider());
     // Cache is located in the backend root
     this.cacheDir = path.resolve(__dirname, '../../../../.cache/ai');
   }
